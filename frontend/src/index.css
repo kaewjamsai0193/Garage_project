@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Thai", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #111827;
+  --color-muted: #6b7280;
+  --color-line: #e5e7eb;
+  --color-surface: #f9fafb;
+  --color-accent: #2563eb;
+  --color-accent-soft: #eff6ff;
+  --color-accent-ink: #1d4ed8;
+  --color-warn-soft: #fffbeb;
+  --color-warn-ink: #b45309;
+  --color-ok-soft: #f0fdf4;
+  --color-ok-ink: #15803d;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-neutral-soft: #f3f4f6;
+}
+
+@page { size: A4; margin: 12mm; }
+
+@layer base {
+  body { @apply bg-white text-ink antialiased; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-accent; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-line bg-white p-4; }
+  .label { @apply mb-1 block text-sm text-muted; }
+  .input { @apply min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-base
+                  focus:border-accent focus:ring-3 focus:ring-accent-soft focus:outline-none
+                  disabled:bg-surface; }
+  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 font-medium disabled:opacity-50; }
+  .btn-primary { @apply bg-accent text-white hover:bg-accent-ink; }
+  .btn-ghost { @apply border border-line bg-white hover:bg-surface; }
+}
