@@ -1,52 +1,57 @@
-import hashlib
-import hmac
 import os
-import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
+from pwdlib import PasswordHash
 
 from app.db import get_db
 from app.models import User
 
-ROUNDS = 600_000
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_EXPIRE_MINUTES = int(os.environ["JWT_EXPIRE_MINUTES"])
 
-def hash_password(pw: str) -> str:
-    """ แฮชรหัสผ่านด้วย PBKDF2-HMAC-SHA256 """
-    salt = secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac("sha256", pw.encode(), salt, ROUNDS)
-    return f"pbkdf2_sha256${ROUNDS}${salt.hex()}${digest.hex()}"
-
-def verify_password(pw: str, stored: str) -> bool:
-    """ ตรวจสอบรหัสผ่าน """
-    _, rounds, salt, digest = stored.split("$")
-    got = hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt), int(rounds))
-    return hmac.compare_digest(got.hex(), digest)
-
-def create_token(user_id: int) -> str:
-    """ สร้าง JWT token """
-    exp = datetime.now(timezone.utc) + timedelta(minutes=int(os.environ["JWT_EXPIRE_MINUTES"]))
-    return jwt.encode({"sub": str(user_id), "exp": exp}, os.environ["JWT_SECRET"], algorithm="HS256")
-
+password_hash = PasswordHash.recommended()
 bearer = HTTPBearer(auto_error=False)
 
-def current_user(cred=Depends(bearer), db=Depends(get_db)) -> User:
-    """ ดึงผู้ใช้ปัจจุบันจาก JWT token """
-    try:
-        payload = jwt.decode(cred.credentials, os.environ["JWT_SECRET"], algorithms=["HS256"])
-        user = db.get(User, int(payload["sub"]))
-    except (AttributeError, jwt.PyJWTError):
-        user = None
+
+def hash_password(password: str) -> str:
+    """รับรหัสผ่านดิบ → คืน hash (ใช้ตอนสร้าง/เปลี่ยนรหัสผ่านใน users.service)"""
+    return password_hash.hash(password)
+
+
+def verify_password(password: str, password_hash_value: str) -> bool:
+    """เทียบรหัสผ่านที่ผู้ใช้กรอกกับ hash ใน DB → True/False (ใช้ใน /auth/login)"""
+    return password_hash.verify(password, password_hash_value)
+
+
+def create_token(user_id: int) -> str:
+    """สร้าง JWT token สำหรับผู้ใช้ที่ระบุ"""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE_MINUTES)
+    return jwt.encode({"user_id": user_id, "exp": expire}, JWT_SECRET, algorithm="HS256")
+
+
+def current_user(token=Depends(bearer), db=Depends(get_db)) -> User:
+    """Dependency: อ่าน Bearer token จาก header → decode JWT → ดึง User จาก DB, ไม่ผ่านโยน 401"""
+    user = None
+    if token:
+        try:
+            payload = jwt.decode(token.credentials, JWT_SECRET, algorithms=["HS256"])
+            user = db.get(User, payload["user_id"])
+        except (jwt.PyJWTError, KeyError):
+            pass
     if user is None or not user.is_active:
-        raise HTTPException(401, "กรุณาเข้าสู่ระบบ")
+        raise HTTPException(status_code=401, detail="กรุณาเข้าสู่ระบบ")
     return user
 
+
 def require_role(*roles):
-    """ ตรวจสอบสิทธิ์ผู้ใช้ """
+    """สร้าง Dependency ที่เช็ค role ของ current_user, ไม่อยู่ใน roles โยน 403"""
+
     def dep(user: User = Depends(current_user)) -> User:
         if user.role not in roles:
             raise HTTPException(403, "ไม่มีสิทธิ์ทำรายการนี้")
         return user
+
     return dep
