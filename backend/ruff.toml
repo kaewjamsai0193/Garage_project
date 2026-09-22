@@ -1,0 +1,13 @@
+line-length = 120
+# ไฟล์ migration alembic สร้างให้ ไม่ต้องจัด
+extend-exclude = ["alembic/versions"]
+
+[lint]
+# B008: Depends() ใน default argument เป็นวิธีปกติของ FastAPI
+# FURB157: test ตั้งใจส่ง Decimal จาก string
+# EXE002: โฟลเดอร์ Windows ที่ mount เข้า Docker ทุกไฟล์ดูเหมือน executable
+ignore = ["B008", "FURB157", "EXE002"]
+
+[lint.isort]
+# มีโฟลเดอร์ backend/alembic/ ชื่อชน ruff จะเดาว่า alembic เป็นโค้ดเรา
+known-third-party = ["alembic"]
