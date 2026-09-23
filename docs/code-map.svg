@@ -1,0 +1,263 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1492" viewBox="0 0 1600 1492" role="img" aria-labelledby="t d">
+<title id="t">อยากแก้เรื่องนี้ ไปเปิดไฟล์ไหน</title>
+<desc id="d">โค้ดที่มีตอนนี้: ทุกคำขอเดินจากหน้าจอ ผ่าน api.js และ Vite ไป router, service และฐานข้อมูล ตารางไล่ทีละหน้าจอว่าเรียก URL ไหน ฟังก์ชันไหนทำงานจริง และแตะตารางไหน</desc>
+<defs>
+ <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#7d8fa6"/></marker>
+ <style>
+  text { font-family: 'Leelawadee UI', Tahoma, sans-serif; fill: #1b2b40; }
+  .h1 { font-size: 40px; font-weight: 700; }
+  .sub { font-size: 21px; fill: #5d6f86; }
+  .h2 { font-size: 24px; font-weight: 700; }
+  .b { font-size: 19px; }
+  .bold { font-weight: 700; }
+  .s { font-size: 16px; fill: #5d6f86; }
+  .muted { fill: #5d6f86; }
+  .white { fill: #ffffff; }
+  .mono { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 16px; }
+  .meth { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 13px; font-weight: 700; }
+  .tbl { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 14px; }
+  .mg { fill: #dbe7fb; } .mgt { fill: #1f4fb5; }
+  .mw { fill: #fde8cf; } .mwt { fill: #9a4a07; }
+  .svc { fill: #1c2e4a; }
+  .auth { fill: #ffffff; stroke: #1c2e4a; stroke-width: 1.5; }
+  .tg { fill: #e7f5ec; } .tgt { fill: #1f6f43; }
+  .tp { fill: #e9ecf2; } .tpt { fill: #4c5a70; }
+  .card { fill: #ffffff; stroke: #e1e7ef; stroke-width: 1.5; }
+  .edge { fill: none; stroke: #7d8fa6; stroke-width: 2.2; }
+  .thin { stroke: #b3bfce; stroke-dasharray: 2 5; stroke-linecap: round; }
+  .dash { stroke-dasharray: 7 6; }
+  .label { paint-order: stroke; stroke: #f6f8fb; stroke-width: 8px; stroke-linejoin: round; }
+ </style>
+</defs>
+
+<rect width="1600" height="1492" fill="#f6f8fb"/>
+
+<text x="40" y="80" class="h1">อยากแก้เรื่องนี้ ไปเปิดไฟล์ไหน</text>
+<text x="40" y="116" class="sub">โค้ดที่มีตอนนี้ ไล่จากหน้าจอทางซ้าย ตามลูกศรไปจนถึงตารางทางขวา</text>
+
+<!-- ทางที่ทุกคำขอเดิน -->
+<text x="40" y="172" class="h2">ทุกคำขอเดินทางนี้</text>
+<rect x="40" y="190" width="220" height="86" rx="12" fill="#eaf0fc" stroke="#d5deea" stroke-width="1.5"/>
+<text x="58" y="226" class="b bold">หน้าจอ</text>
+<text x="58" y="256" class="s">useQuery / useMutation</text>
+<rect x="300" y="190" width="220" height="86" rx="12" fill="#ffffff" stroke="#d5deea" stroke-width="1.5"/>
+<text x="318" y="226" class="mono bold">api.js</text>
+<text x="318" y="256" class="s">แนบ token · 401 ไปล็อกอิน</text>
+<path d="M262,233 L298,233" class="edge" marker-end="url(#ar)"/>
+<rect x="560" y="190" width="220" height="86" rx="12" fill="#ffffff" stroke="#d5deea" stroke-width="1.5"/>
+<text x="578" y="226" class="b bold">Vite</text>
+<text x="578" y="256" class="s">ส่ง /api ต่อให้หลังบ้าน</text>
+<path d="M522,233 L558,233" class="edge" marker-end="url(#ar)"/>
+<rect x="820" y="190" width="220" height="86" rx="12" fill="#ffffff" stroke="#d5deea" stroke-width="1.5"/>
+<text x="838" y="226" class="mono bold">router.py</text>
+<text x="838" y="256" class="s">เช็คว่าใคร มีสิทธิ์ไหม</text>
+<path d="M782,233 L818,233" class="edge" marker-end="url(#ar)"/>
+<rect x="1080" y="190" width="220" height="86" rx="12" fill="#ffffff" stroke="#d5deea" stroke-width="1.5"/>
+<text x="1098" y="226" class="mono bold">service.py</text>
+<text x="1098" y="256" class="s">กฎของอู่ แล้ว commit</text>
+<path d="M1042,233 L1078,233" class="edge" marker-end="url(#ar)"/>
+<rect x="1340" y="190" width="220" height="86" rx="12" fill="#e7f5ec" stroke="#d5deea" stroke-width="1.5"/>
+<text x="1358" y="226" class="b bold">PostgreSQL</text>
+<text x="1358" y="256" class="s">5 ตาราง</text>
+<path d="M1302,233 L1338,233" class="edge" marker-end="url(#ar)"/>
+<path d="M1450,278 V314 H150 V280" class="edge dash" marker-end="url(#ar)"/>
+<text x="800" y="320" text-anchor="middle" class="s label">ขากลับ: ได้ JSON เก็บ cache ตาม queryKey แล้ววาดจอใหม่</text>
+<!-- หัวคอลัมน์ -->
+<text x="48" y="396" class="s">หน้าจอ</text>
+<text x="400" y="396" class="s">คำขอ</text>
+<text x="840" y="396" class="s">ทำงานจริงที่</text>
+<text x="1170" y="396" class="s">ตารางที่แตะ</text>
+<rect x="24" y="414" width="1552" height="144" rx="14" class="card"/>
+<text x="48" y="442" class="b bold">ล็อกอิน</text>
+<text x="200" y="442" class="mono muted">users/auth_router.py</text>
+<rect x="48" y="455" width="282" height="38" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="480" class="mono bold">LoginPage</text>
+<rect x="48" y="503" width="282" height="38" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="528" class="mono bold">auth.jsx</text>
+<text x="150" y="528" class="s">ตอนเปิดแอป</text>
+<path d="M330,474 L398,474" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="456" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="462" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="479" text-anchor="middle" class="meth mwt">POST</text>
+<text x="484" y="480" class="mono">/api/auth/login</text>
+<path d="M760,474 L838,474" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="456" width="250" height="36" rx="8" class="auth"/>
+<text x="856" y="480" class="mono">create_token</text>
+<path d="M1090,474 L1168,474" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="459" width="64" height="30" rx="15" class="tp"/>
+<text x="1181" y="479" class="tbl tpt">users</text>
+<path d="M330,522 L398,522" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="504" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="510" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="527" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="528" class="mono">/api/auth/me</text>
+<path d="M760,522 L838,522" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="504" width="250" height="36" rx="8" class="auth"/>
+<text x="856" y="528" class="mono">current_user</text>
+<path d="M1090,522 L1168,522" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="507" width="64" height="30" rx="15" class="tp"/>
+<text x="1181" y="527" class="tbl tpt">users</text>
+<rect x="24" y="570" width="1552" height="192" rx="14" class="card"/>
+<text x="48" y="598" class="b bold">ผู้ใช้</text>
+<text x="200" y="598" class="mono muted">users/router.py</text>
+<rect x="48" y="611" width="282" height="38" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="636" class="mono bold">UserListPage</text>
+<rect x="48" y="659" width="282" height="86" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="708" class="mono bold">UserFormPage</text>
+<path d="M330,630 L398,630" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="612" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="618" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="635" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="636" class="mono">/api/users</text>
+<path d="M760,630 L1168,630" class="edge thin" marker-end="url(#ar)"/>
+<rect x="1170" y="615" width="64" height="30" rx="15" class="tp"/>
+<text x="1181" y="635" class="tbl tpt">users</text>
+<path d="M330,678 L398,678" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="660" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="666" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="683" text-anchor="middle" class="meth mwt">POST</text>
+<text x="484" y="684" class="mono">/api/users</text>
+<path d="M760,678 L838,678" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="660" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="684" class="mono white">create_user</text>
+<path d="M1090,678 L1168,678" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="663" width="64" height="30" rx="15" class="tp"/>
+<text x="1181" y="683" class="tbl tpt">users</text>
+<path d="M330,726 L398,726" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="708" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="714" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="731" text-anchor="middle" class="meth mwt">PATCH</text>
+<text x="484" y="732" class="mono">/api/users/{id}</text>
+<path d="M760,726 L838,726" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="708" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="732" class="mono white">update_user</text>
+<path d="M1090,726 L1168,726" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="711" width="64" height="30" rx="15" class="tp"/>
+<text x="1181" y="731" class="tbl tpt">users</text>
+<rect x="24" y="774" width="1552" height="144" rx="14" class="card"/>
+<text x="48" y="802" class="b bold">ค่าตั้งอู่</text>
+<text x="200" y="802" class="mono muted">settings/router.py</text>
+<rect x="48" y="815" width="282" height="86" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="864" class="mono bold">SettingsPage</text>
+<path d="M330,834 L398,834" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="816" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="822" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="839" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="840" class="mono">/api/settings</text>
+<path d="M760,834 L1168,834" class="edge thin" marker-end="url(#ar)"/>
+<rect x="1170" y="819" width="89" height="30" rx="15" class="tp"/>
+<text x="1181" y="839" class="tbl tpt">settings</text>
+<path d="M330,882 L398,882" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="864" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="870" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="887" text-anchor="middle" class="meth mwt">PUT</text>
+<text x="484" y="888" class="mono">/api/settings</text>
+<path d="M760,882 L838,882" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="864" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="888" class="mono white">update_settings</text>
+<path d="M1090,882 L1168,882" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="867" width="89" height="30" rx="15" class="tp"/>
+<text x="1181" y="887" class="tbl tpt">settings</text>
+<rect x="24" y="930" width="1552" height="432" rx="14" class="card"/>
+<text x="48" y="958" class="b bold">สต็อก</text>
+<text x="200" y="958" class="mono muted">stock/router.py</text>
+<rect x="48" y="971" width="282" height="38" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="996" class="mono bold">ProductListPage</text>
+<rect x="48" y="1019" width="282" height="230" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="1140" class="mono bold">ProductDetailPage</text>
+<rect x="48" y="1259" width="282" height="86" rx="10" fill="#eaf0fc" stroke="#c9d7f2"/>
+<text x="64" y="1308" class="mono bold">ProductModal</text>
+<text x="186" y="1308" class="s">ฟอร์มเพิ่ม/แก้</text>
+<path d="M330,990 L398,990" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="972" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="978" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="995" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="996" class="mono">/api/products</text>
+<path d="M760,990 L1168,990" class="edge thin" marker-end="url(#ar)"/>
+<rect x="1170" y="975" width="89" height="30" rx="15" class="tg"/>
+<text x="1181" y="995" class="tbl tgt">products</text>
+<rect x="1267.2" y="975" width="106" height="30" rx="15" class="tg"/>
+<text x="1278.2" y="995" class="tbl tgt">stock_lots</text>
+<path d="M330,1038 L398,1038" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1020" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1026" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="1043" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="1044" class="mono">/api/products/{id}</text>
+<path d="M760,1038 L1168,1038" class="edge thin" marker-end="url(#ar)"/>
+<rect x="1170" y="1023" width="89" height="30" rx="15" class="tg"/>
+<text x="1181" y="1043" class="tbl tgt">products</text>
+<rect x="1267.2" y="1023" width="106" height="30" rx="15" class="tg"/>
+<text x="1278.2" y="1043" class="tbl tgt">stock_lots</text>
+<path d="M330,1086 L398,1086" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1068" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1074" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="1091" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="1092" class="mono">/api/products/{id}/lots</text>
+<path d="M760,1086 L1168,1086" class="edge thin" marker-end="url(#ar)"/>
+<rect x="1170" y="1071" width="106" height="30" rx="15" class="tg"/>
+<text x="1181" y="1091" class="tbl tgt">stock_lots</text>
+<path d="M330,1134 L398,1134" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1116" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1122" width="64" height="24" rx="6" class="mg"/>
+<text x="440" y="1139" text-anchor="middle" class="meth mgt">GET</text>
+<text x="484" y="1140" class="mono">/api/products/{id}/movements</text>
+<path d="M760,1134 L1168,1134" class="edge thin" marker-end="url(#ar)"/>
+<rect x="1170" y="1119" width="148" height="30" rx="15" class="tg"/>
+<text x="1181" y="1139" class="tbl tgt">stock_movements</text>
+<rect x="1326.0" y="1119" width="64" height="30" rx="15" class="tp"/>
+<text x="1337.0" y="1139" class="tbl tpt">users</text>
+<path d="M330,1182 L398,1182" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1164" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1170" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="1187" text-anchor="middle" class="meth mwt">POST</text>
+<text x="484" y="1188" class="mono">/api/stock/adjust-down</text>
+<path d="M760,1182 L838,1182" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="1164" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="1188" class="mono white">adjust_down</text>
+<path d="M1090,1182 L1168,1182" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="1167" width="106" height="30" rx="15" class="tg"/>
+<text x="1181" y="1187" class="tbl tgt">stock_lots</text>
+<rect x="1284.0" y="1167" width="148" height="30" rx="15" class="tg"/>
+<text x="1295.0" y="1187" class="tbl tgt">stock_movements</text>
+<path d="M330,1230 L398,1230" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1212" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1218" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="1235" text-anchor="middle" class="meth mwt">POST</text>
+<text x="484" y="1236" class="mono">/api/stock/adjust-up</text>
+<path d="M760,1230 L838,1230" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="1212" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="1236" class="mono white">adjust_up</text>
+<path d="M1090,1230 L1168,1230" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="1215" width="106" height="30" rx="15" class="tg"/>
+<text x="1181" y="1235" class="tbl tgt">stock_lots</text>
+<rect x="1284.0" y="1215" width="148" height="30" rx="15" class="tg"/>
+<text x="1295.0" y="1235" class="tbl tgt">stock_movements</text>
+<path d="M330,1278 L398,1278" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1260" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1266" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="1283" text-anchor="middle" class="meth mwt">POST</text>
+<text x="484" y="1284" class="mono">/api/products</text>
+<path d="M760,1278 L838,1278" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="1260" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="1284" class="mono white">save_product</text>
+<path d="M1090,1278 L1168,1278" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="1263" width="89" height="30" rx="15" class="tg"/>
+<text x="1181" y="1283" class="tbl tgt">products</text>
+<path d="M330,1326 L398,1326" class="edge" marker-end="url(#ar)"/>
+<rect x="400" y="1308" width="360" height="36" rx="8" fill="#f3f6fa"/>
+<rect x="408" y="1314" width="64" height="24" rx="6" class="mw"/>
+<text x="440" y="1331" text-anchor="middle" class="meth mwt">PUT</text>
+<text x="484" y="1332" class="mono">/api/products/{id}</text>
+<path d="M760,1326 L838,1326" class="edge" marker-end="url(#ar)"/>
+<rect x="840" y="1308" width="250" height="36" rx="8" class="svc"/>
+<text x="856" y="1332" class="mono white">save_product</text>
+<path d="M1090,1326 L1168,1326" class="edge" marker-end="url(#ar)"/>
+<rect x="1170" y="1311" width="89" height="30" rx="15" class="tg"/>
+<text x="1181" y="1331" class="tbl tgt">products</text>
+<!-- หลังบันทึก + วิธีอ่าน -->
+<text x="40" y="1408" class="b"><tspan class="bold">บันทึกเสร็จ หน้าจอโหลดใหม่เอง:</tspan>  สินค้า/สต็อก สั่ง <tspan class="mono">invalidate ["products"]</tspan>   ผู้ใช้ สั่ง <tspan class="mono">["users"]</tspan>   ค่าตั้งอู่ เอาค่าที่ตอบกลับใส่ cache เลย</text>
+<rect x="40" y="1430" width="44" height="24" rx="6" class="svc"/><text x="96" y="1448" class="s">service.py เขียนฐาน</text>
+<rect x="290" y="1430" width="44" height="24" rx="6" class="auth"/><text x="346" y="1448" class="s">auth.py</text>
+<path d="M470,1442 L530,1442" class="edge thin"/><text x="546" y="1448" class="s">อ่านตรงจาก router ไม่ผ่าน service</text>
+<rect x="850" y="1430" width="64" height="24" rx="6" class="mw"/><text x="926" y="1448" class="s">คำขอที่เปลี่ยนข้อมูล</text>
+</svg>

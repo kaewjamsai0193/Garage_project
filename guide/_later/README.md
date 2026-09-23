@@ -21,6 +21,7 @@
 | `GET /api/users/mechanics` | 5 | เพิ่มใน `users/router.py` |
 | `_locked_lots` · `issue_fifo` · `return_issued` | 5 | เพิ่มใน `stock/service.py` (โค้ดอยู่ใน `../../project/backend/app/stock/service.py`) |
 | `stock_movements.job_id` · `invoice_item_id` · ประเภท `issue` `return` | 5–6 | เพิ่มคอลัมน์ + **แก้ CHECK `type` `direction` เพิ่ม CHECK `reference` ด้วยมือใน migration** (วิธีเดียวกับเฟส 4) · `MovementOut` + หน้า StockDetail เพิ่ม `job_id` `invoice_item_id` |
+| ปุ่มซื้อด่วนในหน้าใบงาน | 5 | `JobItemOut.qty_on_hand` + ปุ่มในแถวอะไหล่ + `GoodsReceiptFormPage` รับ `?product=&qty=&back=` · ดู 05-jobs.md หัวข้อ "ปุ่มซื้อด่วน" |
 | fixture `stock` ใน `conftest.py` | 5 | ใส่ของเข้าคลังผ่าน `adjust_up` |
 | `textutil.no_spaces()` | 5 | ทะเบียนรถ |
 | `timeutil.py` (+ `test_timeutil.py`) | 6 | เวลาไทย ปีเลขบิล |

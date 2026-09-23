@@ -49,6 +49,7 @@ models.py → alembic revision --autogenerate (เปิดอ่านไฟล
 
 | อยากรู้ | เปิด |
 |---|---|
+| ภาพทั้งระบบตอนเสร็จ (ใครใช้ งานเดินยังไง ตาราง ไฟล์) | [`../docs/README.md`](../docs/README.md) |
 | ระบบทำอะไรบ้าง (ภาษาคน) | `../../project/new_scenario_summary.md` |
 | ตาราง คอลัมน์ สูตรเงิน สิทธิ์ | `../../project/data_model.md` |
 | กฎเขียนโค้ดของโปรเจ็กต์ต้นทาง | `../../project/CLAUDE.md` |

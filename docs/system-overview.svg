@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="t d">
+<title id="t">ภาพรวมระบบ</title>
+<desc id="d">เจ้าของอู่ พนักงาน และช่าง ล็อกอินเข้าเว็บเดียวกัน หน้าเว็บส่งคำขอผ่าน /api ให้หลังบ้าน ซึ่งตรวจสิทธิ์ ใช้กฎของอู่ แล้วบันทึกลงฐานข้อมูล 16 ตาราง ลูกค้ากับร้านอะไหล่อยู่นอกระบบ ได้เอกสารที่พิมพ์ออกไป</desc>
+<defs>
+ <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#7d8fa6"/></marker>
+ <marker id="ar-in" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#8aa0bf"/></marker>
+ <marker id="ar-admin" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#3b5bdb"/></marker>
+ <marker id="ar-emp" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#0c8599"/></marker>
+ <marker id="ar-mech" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#d9480f"/></marker>
+ <style>
+  text { font-family: 'Leelawadee UI', Tahoma, sans-serif; fill: #1b2b40; }
+  .h1 { font-size: 46px; font-weight: 700; }
+  .sub { font-size: 23px; fill: #5d6f86; }
+  .h2 { font-size: 28px; font-weight: 700; }
+  .t { font-size: 22px; font-weight: 700; }
+  .b { font-size: 21px; }
+  .c { font-size: 19px; }
+  .s { font-size: 18px; fill: #5d6f86; }
+  .muted { fill: #5d6f86; }
+  .mono { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 19px; }
+  .code { font-family: Consolas, 'Cascadia Mono', monospace; font-size: 16px; }
+  .white { fill: #ffffff; } .soft { fill: #b8c6da; }
+  .admin { fill: #3b5bdb; } .emp { fill: #0c8599; } .mech { fill: #d9480f; }
+  .dbink { fill: #1f6f43; }
+  .card { fill: #ffffff; stroke: #d5deea; stroke-width: 1.5; }
+  .chip { fill: #ffffff; stroke: #c9d7f2; stroke-width: 1.5; }
+  .paper { fill: #f7f9fc; stroke: #9fb0c6; stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .step { fill: #2c4368; }
+  .edge { fill: none; stroke: #7d8fa6; stroke-width: 2.5; }
+  .inner { fill: none; stroke: #8aa0bf; stroke-width: 2.5; }
+  .dash { stroke-dasharray: 8 6; }
+  .role { fill: none; stroke-width: 3.5; }
+  .label { paint-order: stroke; stroke: #f6f8fb; stroke-width: 8px; stroke-linejoin: round; }
+ </style>
+</defs>
+
+<rect width="1920" height="1080" fill="#f6f8fb"/>
+
+<!-- หัว -->
+<text x="64" y="94" class="h1">ภาพรวมระบบ</text>
+<text x="64" y="138" class="sub">ใครใช้ แล้วข้อมูลวิ่งไปไหน</text>
+
+<!-- คนในอู่ -->
+<text x="64" y="196" class="s">คนในอู่</text>
+
+<rect x="64" y="220" width="300" height="150" rx="16" class="card"/>
+<text x="92" y="272" class="h2 admin">เจ้าของอู่</text>
+<text x="92" y="314" class="b">ทำได้ทุกอย่าง</text>
+<text x="92" y="346" class="b muted">เห็นต้นทุน กำไร ภาษี</text>
+
+<rect x="64" y="400" width="300" height="150" rx="16" class="card"/>
+<text x="92" y="452" class="h2 emp">พนักงาน</text>
+<text x="92" y="494" class="b">รับรถ ออกบิล รับเงิน</text>
+<text x="92" y="526" class="b muted">สั่งของ โทรตามลูกค้า</text>
+
+<rect x="64" y="580" width="300" height="150" rx="16" class="card"/>
+<text x="92" y="632" class="h2 mech">ช่าง</text>
+<text x="92" y="674" class="b">ใส่อะไหล่ อัปเดตงาน</text>
+<text x="92" y="706" class="b muted">รับของตอนซื้อด่วน</text>
+
+<!-- ด่านล็อกอิน -->
+<text x="432" y="196" text-anchor="middle" class="s">ล็อกอินก่อน</text>
+<line x1="432" y1="214" x2="432" y2="740" stroke="#aebbd0" stroke-width="3" stroke-dasharray="1 9" stroke-linecap="round"/>
+
+<path d="M364,295 C440,295 420,470 496,470" class="role" stroke="#3b5bdb" marker-end="url(#ar-admin)"/>
+<path d="M364,475 C420,475 420,482 496,482" class="role" stroke="#0c8599" marker-end="url(#ar-emp)"/>
+<path d="M364,655 C440,655 420,494 496,494" class="role" stroke="#d9480f" marker-end="url(#ar-mech)"/>
+
+<!-- หน้าเว็บ -->
+<rect x="500" y="200" width="520" height="568" rx="20" fill="#eaf0fc" stroke="#c9d7f2" stroke-width="1.5"/>
+<text x="528" y="248" class="h2">หน้าเว็บ</text>
+<text x="996" y="248" text-anchor="end" class="s">มือถือ / คอม</text>
+
+<text x="528" y="292" class="s">งานซ่อม</text>
+<rect x="528" y="304" width="84" height="44" rx="22" class="chip"/><text x="570" y="333" text-anchor="middle" class="c">ใบงาน</text>
+<rect x="624" y="304" width="137" height="44" rx="22" class="chip"/><text x="692" y="333" text-anchor="middle" class="c">รถและประวัติ</text>
+<rect x="773" y="304" width="158" height="44" rx="22" class="chip"/><text x="852" y="333" text-anchor="middle" class="c">เตือนบำรุงรักษา</text>
+
+<text x="528" y="392" class="s">เก็บเงิน</text>
+<rect x="528" y="404" width="64" height="44" rx="22" class="chip"/><text x="560" y="433" text-anchor="middle" class="c">บิล</text>
+<rect x="604" y="404" width="126" height="44" rx="22" class="chip"/><text x="667" y="433" text-anchor="middle" class="c">ขายหน้าร้าน</text>
+
+<text x="528" y="492" class="s">ของในคลัง</text>
+<rect x="528" y="504" width="84" height="44" rx="22" class="chip"/><text x="570" y="533" text-anchor="middle" class="c">สต็อก</text>
+<rect x="624" y="504" width="110" height="44" rx="22" class="chip"/><text x="679" y="533" text-anchor="middle" class="c">ใบสั่งซื้อ</text>
+<rect x="746" y="504" width="84" height="44" rx="22" class="chip"/><text x="788" y="533" text-anchor="middle" class="c">รับของ</text>
+
+<text x="528" y="592" class="s">ดูแลอู่</text>
+<rect x="528" y="604" width="112" height="44" rx="22" class="chip"/><text x="584" y="633" text-anchor="middle" class="c">แดชบอร์ด</text>
+<rect x="652" y="604" width="130" height="44" rx="22" class="chip"/><text x="717" y="633" text-anchor="middle" class="c">รายงานภาษี</text>
+<rect x="794" y="604" width="82" height="44" rx="22" class="chip"/><text x="835" y="633" text-anchor="middle" class="c">ตั้งค่า</text>
+<rect x="888" y="604" width="74" height="44" rx="22" class="chip"/><text x="925" y="633" text-anchor="middle" class="c">ผู้ใช้</text>
+
+<text x="528" y="690" class="s">พิมพ์ออกกระดาษ</text>
+<rect x="528" y="702" width="138" height="44" rx="8" class="paper"/><text x="597" y="731" text-anchor="middle" class="c">ใบเสนอราคา</text>
+<rect x="678" y="702" width="134" height="44" rx="8" class="paper"/><text x="745" y="731" text-anchor="middle" class="c">บิล/ใบกำกับ</text>
+<rect x="824" y="702" width="112" height="44" rx="8" class="paper"/><text x="880" y="731" text-anchor="middle" class="c">ใบสั่งซื้อ</text>
+
+<!-- หน้าเว็บ ↔ หลังบ้าน -->
+<path d="M1022,480 L1098,480" class="edge" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="1060" y="462" text-anchor="middle" class="mono muted">/api</text>
+
+<!-- หลังบ้าน -->
+<rect x="1100" y="200" width="340" height="568" rx="20" fill="#1c2e4a"/>
+<text x="1128" y="248" class="h2 white">หลังบ้าน</text>
+<text x="1416" y="248" text-anchor="end" class="s soft">FastAPI</text>
+
+<rect x="1128" y="286" width="284" height="124" rx="14" class="step"/>
+<text x="1152" y="334" class="t white">ตรวจสิทธิ์</text>
+<text x="1392" y="334" text-anchor="end" class="code soft">router.py</text>
+<text x="1152" y="376" class="c soft">รู้ว่าใคร ทำได้ไหม</text>
+<path d="M1270,412 L1270,448" class="inner" marker-end="url(#ar-in)"/>
+
+<rect x="1128" y="450" width="284" height="124" rx="14" class="step"/>
+<text x="1152" y="498" class="t white">กฎของอู่</text>
+<text x="1392" y="498" text-anchor="end" class="code soft">service.py</text>
+<text x="1152" y="540" class="c soft">เช็คเงื่อนไข แล้วบันทึก</text>
+<path d="M1270,576 L1270,612" class="inner" marker-end="url(#ar-in)"/>
+
+<rect x="1128" y="614" width="284" height="124" rx="14" class="step"/>
+<text x="1152" y="662" class="t white">ตาราง</text>
+<text x="1392" y="662" text-anchor="end" class="code soft">models.py</text>
+<text x="1152" y="704" class="c soft">แปลงเป็นคำสั่ง SQL</text>
+
+<!-- หลังบ้าน ↔ ฐานข้อมูล -->
+<path d="M1442,480 L1518,480" class="edge" marker-start="url(#ar)" marker-end="url(#ar)"/>
+
+<!-- ฐานข้อมูล -->
+<rect x="1520" y="200" width="336" height="568" rx="20" fill="#ffffff" stroke="#7cc49a" stroke-width="2"/>
+<text x="1548" y="248" class="h2 dbink">ฐานข้อมูล</text>
+<text x="1548" y="284" class="s">PostgreSQL · 16 ตาราง</text>
+<circle cx="1558" cy="336" r="8" fill="#1971c2"/><text x="1580" y="343" class="b">ลูกค้า รถ</text>
+<circle cx="1558" cy="394" r="8" fill="#0b7285"/><text x="1580" y="401" class="b">ใบงาน</text>
+<circle cx="1558" cy="452" r="8" fill="#a61e4d"/><text x="1580" y="459" class="b">บิล</text>
+<circle cx="1558" cy="510" r="8" fill="#2b8a3e"/><text x="1580" y="517" class="b">สินค้า คลัง</text>
+<circle cx="1558" cy="568" r="8" fill="#c2410c"/><text x="1580" y="575" class="b">จัดซื้อ รับของ</text>
+<circle cx="1558" cy="626" r="8" fill="#862e9c"/><text x="1580" y="633" class="b">เตือนบำรุงรักษา</text>
+<circle cx="1558" cy="684" r="8" fill="#4c5a70"/><text x="1580" y="691" class="b">ผู้ใช้ ค่าตั้งอู่</text>
+
+<!-- นอกระบบ -->
+<rect x="500" y="820" width="940" height="230" rx="20" fill="#eef2f7" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="10 7"/>
+
+<rect x="532" y="860" width="430" height="120" rx="16" class="card"/>
+<text x="560" y="910" class="h2">ลูกค้า</text>
+<text x="560" y="952" class="b muted">แจ้งอาการ ตกลงราคา จ่ายเงิน</text>
+
+<rect x="978" y="860" width="430" height="120" rx="16" class="card"/>
+<text x="1006" y="910" class="h2">ร้านอะไหล่</text>
+<text x="1006" y="952" class="b muted">รับใบสั่งซื้อ ส่งของพร้อมใบกำกับ</text>
+
+<path d="M672,770 C672,815 747,815 747,858" class="edge dash" marker-end="url(#ar)"/>
+<text x="660" y="806" text-anchor="end" class="s label">ใบเสนอราคา บิล</text>
+<path d="M880,770 C880,815 1193,815 1193,858" class="edge dash" marker-end="url(#ar)"/>
+<text x="1110" y="806" class="s label">ใบสั่งซื้อ</text>
+
+<text x="532" y="1022" class="s">นอกระบบ: ไม่ได้ล็อกอิน คุยกับคนในอู่ แล้วได้กระดาษที่พิมพ์จากระบบ</text>
+</svg>

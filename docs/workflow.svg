@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="860" viewBox="0 0 1800 860" role="img" aria-labelledby="t d">
+<title id="t">รถหนึ่งคัน เดินผ่านระบบยังไง</title>
+<desc id="d">ขั้นงานซ่อม: รับรถ เปิดใบงาน ตีราคา ลูกค้าอนุมัติ (ตัดของจาก Lot เก่าก่อน) ซ่อม ออกบิล รับเงิน (ระบบปิดงานเอง) ด้านล่างคือคลัง: ใบสั่งซื้อ รับของเป็น Lot ขายหน้าร้าน หลังรับเงินเริ่มนับประกันและสร้างรายการเตือนบำรุงรักษา ซึ่งพารถวนกลับมาเป็นงานเคลมหรืองานใหม่</desc>
+<defs>
+ <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><path d="M0,1 L10,5 L0,9 z" fill="#7d8fa6"/></marker>
+ <style>
+  text { font-family: 'Leelawadee UI', Tahoma, sans-serif; fill: #1b2b40; }
+  .h1 { font-size: 40px; font-weight: 700; }
+  .sub { font-size: 21px; fill: #5d6f86; }
+  .t { font-size: 20px; font-weight: 700; }
+  .s { font-size: 16px; fill: #5d6f86; }
+  .sec { font-size: 17px; fill: #5d6f86; font-weight: 700; }
+  .num { font-size: 15px; font-weight: 700; }
+  .st { font-size: 16px; font-weight: 700; }
+  .white { fill: #ffffff; } .soft { fill: #b8c6da; } .navy { fill: #1c2e4a; }
+  .loop { fill: #3b5bdb; font-weight: 700; }
+  .card { fill: #ffffff; stroke: #d5deea; stroke-width: 1.5; }
+  .dark { fill: #1c2e4a; }
+  .ghost { fill: #f7f9fc; stroke: #9fb0c6; stroke-width: 1.5; stroke-dasharray: 7 5; }
+  .edge { fill: none; stroke: #7d8fa6; stroke-width: 2.5; }
+  .dash { stroke-dasharray: 8 6; }
+  .label { paint-order: stroke; stroke: #f6f8fb; stroke-width: 8px; stroke-linejoin: round; }
+ </style>
+</defs>
+
+<rect width="1800" height="860" fill="#f6f8fb"/>
+
+<!-- หัว -->
+<text x="75" y="80" class="h1">รถหนึ่งคัน เดินผ่านระบบยังไง</text>
+<text x="75" y="116" class="sub">เส้นทึบคือขั้นปกติ เส้นประคือรถวนกลับมาอีกรอบ</text>
+
+<!-- สถานะใบงาน -->
+<text x="75" y="174" class="sec">สถานะใบงาน</text>
+<rect x="315" y="150" width="690" height="36" rx="18" fill="#fff3bf"/><text x="660" y="174" text-anchor="middle" class="st" style="fill:#8a6100">รอเริ่มซ่อม</text>
+<rect x="1035" y="150" width="180" height="36" rx="18" fill="#d0ebff"/><text x="1125" y="174" text-anchor="middle" class="st" style="fill:#1864ab">กำลังซ่อม</text>
+<rect x="1221" y="150" width="264" height="36" rx="18" fill="#c3fae8"/><text x="1353" y="174" text-anchor="middle" class="st" style="fill:#087f5b">เสร็จรอส่งมอบ</text>
+<rect x="1515" y="150" width="210" height="36" rx="18" fill="#d3f9d8"/><text x="1620" y="174" text-anchor="middle" class="st" style="fill:#2b8a3e">ปิดงาน</text>
+<text x="660" y="214" text-anchor="middle" class="s">ยกเลิกใบงานได้ ถ้าลูกค้ายังไม่อนุมัติ</text>
+
+<!-- งานซ่อม 7 ขั้น -->
+<rect x="75" y="240" width="210" height="124" rx="14" class="card"/>
+<circle cx="101" cy="272" r="14" class="dark"/><text x="101" y="277" text-anchor="middle" class="num white">1</text>
+<text x="123" y="279" class="t">รับรถ</text>
+<text x="93" y="316" class="s">ค้นจากเบอร์หรือทะเบียน</text>
+<text x="93" y="342" class="s">ไม่เจอ เพิ่มลูกค้ากับรถใหม่</text>
+
+<rect x="315" y="240" width="210" height="124" rx="14" class="card"/>
+<circle cx="341" cy="272" r="14" class="dark"/><text x="341" y="277" text-anchor="middle" class="num white">2</text>
+<text x="363" y="279" class="t">เปิดใบงาน</text>
+<text x="333" y="316" class="s">จดอาการ เลขไมล์</text>
+<text x="333" y="342" class="s">รถคันหนึ่งค้างได้ใบเดียว</text>
+
+<rect x="555" y="240" width="210" height="124" rx="14" class="card"/>
+<circle cx="581" cy="272" r="14" class="dark"/><text x="581" y="277" text-anchor="middle" class="num white">3</text>
+<text x="603" y="279" class="t">ตีราคา</text>
+<text x="573" y="316" class="s">ใส่อะไหล่ ค่าแรง ช่าง</text>
+<text x="573" y="342" class="s">พิมพ์ใบเสนอราคาให้ลูกค้า</text>
+
+<rect x="795" y="240" width="210" height="124" rx="14" class="dark"/>
+<circle cx="821" cy="272" r="14" fill="#ffffff"/><text x="821" y="277" text-anchor="middle" class="num navy">4</text>
+<text x="843" y="279" class="t white">ลูกค้าอนุมัติ</text>
+<text x="813" y="316" class="s white">ของถูกตัดออกจากคลังจริง</text>
+<text x="813" y="342" class="s soft">ยังไม่อนุมัติ ห้ามเริ่มซ่อม</text>
+
+<rect x="1035" y="240" width="210" height="124" rx="14" class="card"/>
+<circle cx="1061" cy="272" r="14" class="dark"/><text x="1061" y="277" text-anchor="middle" class="num white">5</text>
+<text x="1083" y="279" class="t">ซ่อม</text>
+<text x="1053" y="316" class="s">ช่างกดเริ่ม แล้วกดเสร็จ</text>
+<text x="1053" y="342" class="s">เสร็จแล้วรอส่งมอบรถ</text>
+
+<rect x="1275" y="240" width="210" height="124" rx="14" class="card"/>
+<circle cx="1301" cy="272" r="14" class="dark"/><text x="1301" y="277" text-anchor="middle" class="num white">6</text>
+<text x="1323" y="279" class="t">ออกบิล</text>
+<text x="1293" y="316" class="s">เลขบิลเรียงต่อกันไม่ข้าม</text>
+<text x="1293" y="342" class="s">ราคา VAT ถูกแช่ไว้บนบิล</text>
+
+<rect x="1515" y="240" width="210" height="124" rx="14" class="dark"/>
+<circle cx="1541" cy="272" r="14" fill="#ffffff"/><text x="1541" y="277" text-anchor="middle" class="num navy">7</text>
+<text x="1563" y="279" class="t white">รับเงิน</text>
+<text x="1533" y="316" class="s white">จ่ายครั้งเดียวเต็มจำนวน</text>
+<text x="1533" y="342" class="s soft">ระบบปิดงานให้เอง</text>
+
+<path d="M285,302 L313,302" class="edge" marker-end="url(#ar)"/>
+<path d="M525,302 L553,302" class="edge" marker-end="url(#ar)"/>
+<path d="M765,302 L793,302" class="edge" marker-end="url(#ar)"/>
+<path d="M1005,302 L1033,302" class="edge" marker-end="url(#ar)"/>
+<path d="M1245,302 L1273,302" class="edge" marker-end="url(#ar)"/>
+<path d="M1485,302 L1513,302" class="edge" marker-end="url(#ar)"/>
+
+<!-- คลังสินค้า -->
+<text x="75" y="484" class="sec">คลังสินค้า</text>
+
+<rect x="75" y="500" width="210" height="124" rx="14" class="card"/>
+<text x="93" y="539" class="t">ใบสั่งซื้อ</text>
+<text x="93" y="576" class="s">ส่งไปให้ร้านอะไหล่</text>
+<text x="93" y="602" class="s">ของยังไม่เข้าคลัง</text>
+
+<rect x="315" y="500" width="210" height="124" rx="14" class="card"/>
+<text x="333" y="539" class="t">รับของ</text>
+<text x="333" y="576" class="s">ของที่รับเป็น Lot ใหม่</text>
+<text x="333" y="602" class="s">ซื้อด่วนไม่มีใบสั่งก็ได้</text>
+
+<rect x="555" y="500" width="450" height="124" rx="14" fill="#e7f5ec" stroke="#7cc49a" stroke-width="1.5"/>
+<text x="573" y="539" class="t" style="fill:#1f6f43">Lot สต็อก</text>
+<text x="987" y="539" text-anchor="end" class="s">เบิกจาก Lot เก่าก่อนเสมอ</text>
+<rect x="573" y="554" width="124" height="36" rx="8" fill="#2b8a3e"/><text x="635" y="578" text-anchor="middle" class="s white">Lot 1 เก่าสุด</text>
+<rect x="713" y="554" width="124" height="36" rx="8" fill="#ffffff" stroke="#9fd0ae"/><text x="775" y="578" text-anchor="middle" class="s">Lot 2</text>
+<rect x="853" y="554" width="124" height="36" rx="8" fill="#ffffff" stroke="#9fd0ae"/><text x="915" y="578" text-anchor="middle" class="s">Lot 3 ใหม่สุด</text>
+<text x="573" y="612" class="s">แต่ละ Lot จำต้นทุนจริงของรอบที่ซื้อ</text>
+
+<rect x="1035" y="500" width="210" height="124" rx="14" class="card"/>
+<text x="1053" y="539" class="t">ขายหน้าร้าน</text>
+<text x="1053" y="576" class="s">ขายอะไหล่ ไม่มีใบงาน</text>
+<text x="1053" y="602" class="s">ตัดของออกทันที</text>
+
+<path d="M285,562 L313,562" class="edge" marker-end="url(#ar)"/>
+<path d="M525,562 L553,562" class="edge" marker-end="url(#ar)"/>
+<path d="M1005,562 L1033,562" class="edge" marker-end="url(#ar)"/>
+
+<path d="M900,498 L900,366" class="edge" marker-end="url(#ar)"/>
+<text x="912" y="440" class="s label">อนุมัติแล้ว ตัดของ</text>
+
+<path d="M1140,498 V440 H1320 V366" class="edge" marker-end="url(#ar)"/>
+<text x="1230" y="430" text-anchor="middle" class="s label">ออกบิลได้เลย</text>
+
+<!-- หลังรับเงิน -->
+<text x="1275" y="484" class="sec">หลังรับเงิน</text>
+
+<path d="M1580,366 V460 H1380 V498" class="edge" marker-end="url(#ar)"/>
+<path d="M1650,366 L1650,498" class="edge" marker-end="url(#ar)"/>
+
+<rect x="1275" y="500" width="210" height="124" rx="14" class="card"/>
+<text x="1293" y="539" class="t">ประกันงานซ่อม</text>
+<text x="1293" y="576" class="s">นับจากวันรับเงิน</text>
+<text x="1293" y="602" class="s">กี่วันตั้งที่หน้าค่าตั้งอู่</text>
+
+<rect x="1515" y="500" width="210" height="124" rx="14" class="card"/>
+<text x="1533" y="539" class="t">เตือนบำรุงรักษา</text>
+<text x="1533" y="576" class="s">นับเดือนตามอะไหล่</text>
+<text x="1533" y="602" class="s">ถึงรอบ พนักงานโทรตาม</text>
+
+<path d="M1380,626 L1380,678" class="edge dash" marker-end="url(#ar)"/>
+<path d="M1620,626 L1620,678" class="edge dash" marker-end="url(#ar)"/>
+
+<rect x="1275" y="680" width="210" height="124" rx="14" class="ghost"/>
+<text x="1293" y="719" class="t">งานเคลม</text>
+<text x="1293" y="756" class="s">รถกลับมาเพราะงานเดิม</text>
+<text x="1293" y="782" class="s">ซ่อมฟรี <tspan class="loop">กลับไปข้อ 2</tspan></text>
+
+<rect x="1515" y="680" width="210" height="124" rx="14" class="ghost"/>
+<text x="1533" y="719" class="t">ลูกค้ากลับมา</text>
+<text x="1533" y="756" class="s">ถึงรอบเปลี่ยนของ</text>
+<text x="1533" y="782" class="s">งานใหม่ <tspan class="loop">กลับไปข้อ 1</tspan></text>
+
+<!-- ตัวเลขที่ได้ -->
+<text x="75" y="664" class="sec">ตัวเลขที่ได้</text>
+
+<rect x="75" y="680" width="450" height="124" rx="14" class="card"/>
+<text x="93" y="719" class="t">แดชบอร์ด</text>
+<text x="93" y="756" class="s">ยอดขาย กำไรจริง ผลงานช่าง</text>
+<text x="93" y="782" class="s">ของใกล้หมด ของค้างนาน</text>
+
+<rect x="555" y="680" width="450" height="124" rx="14" class="card"/>
+<text x="573" y="719" class="t">รายงานภาษี</text>
+<text x="573" y="756" class="s">ภาษีขาย อ่านจากบิล</text>
+<text x="573" y="782" class="s">ภาษีซื้อ อ่านจากใบรับของ</text>
+
+<text x="1035" y="719" class="s">ไม่มีตารางสรุปแยก</text>
+<text x="1035" y="745" class="s">ทุกตัวเลขคิดสด</text>
+<text x="1035" y="771" class="s">จากบิลกับ Lot</text>
+</svg>
