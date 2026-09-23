@@ -10,6 +10,8 @@ from app.db import get_db
 from app.models import User
 
 JWT_SECRET = os.environ["JWT_SECRET"]
+if JWT_SECRET in ("", "change-me-to-a-long-random-string"):
+    raise RuntimeError("ตั้ง JWT_SECRET ใน .env เป็นข้อความสุ่มยาว ๆ ก่อน (ห้ามใช้ค่าตัวอย่าง)")
 JWT_EXPIRE_MINUTES = int(os.environ["JWT_EXPIRE_MINUTES"])
 
 password_hash = PasswordHash.recommended()
@@ -40,7 +42,7 @@ def current_user(token=Depends(bearer), db=Depends(get_db)) -> User:
             payload = jwt.decode(token.credentials, JWT_SECRET, algorithms=["HS256"])
             user = db.get(User, payload["user_id"])
         except (jwt.PyJWTError, KeyError):
-            pass
+            pass  # token เสีย/หมดอายุ/ไม่มี user_id → user ยังเป็น None ไปจบที่ 401 ข้างล่างที่เดียว
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="กรุณาเข้าสู่ระบบ")
     return user
@@ -55,3 +57,7 @@ def require_role(*roles):
         return user
 
     return dep
+
+
+admin = require_role("admin")
+staff = require_role("admin", "employee")

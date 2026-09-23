@@ -5,14 +5,19 @@ from app.db import get_or_404, lock_shop
 from app.models import Product, StockLot, StockMovement
 from app.money import format_qty, round_money
 
+# Lot เก็บว่า "ของมาจากไหน" (source_type) · สมุดสต็อกเก็บว่า "เกิดอะไรขึ้น" (movement_type) คำเลยคนละชุด
+MOVEMENT_TYPE_BY_SOURCE = {"adjustment": "adjust", "opening": "opening"}
+
 
 def save_product(db, product_id, data) -> Product:
-    """สร้าง (product_id=None) หรือแก้สินค้า: กันรหัสซ้ำ, กันเปลี่ยนหน่วยเมื่อมี Lot แล้ว → commit"""
+    """ล็อกร้าน → สร้าง (product_id=None) หรือแก้สินค้า: กันรหัสซ้ำ, กันเปลี่ยนหน่วยเมื่อมี Lot แล้ว → commit"""
+    lock_shop(db)  # กัน adjust_up สร้าง Lot แรกแทรกระหว่างเช็คหน่วยกับ commit
     product = get_or_404(db, Product, product_id, "สินค้า") if product_id else Product()
-    if db.scalar(select(Product.id).where(Product.code == data.code, Product.id != product_id)):
+    code_owner = db.scalar(select(Product.id).where(Product.code == data.code))  # รหัสนี้เป็นของสินค้าตัวไหน
+    if code_owner is not None and code_owner != product_id:
         raise HTTPException(409, "รหัสสินค้านี้มีแล้ว")
-    has_lots = product_id and db.scalar(select(StockLot.id).where(StockLot.product_id == product_id).limit(1))
-    if has_lots and data.unit != product.unit:
+    unit_changed = product_id is not None and data.unit != product.unit
+    if unit_changed and db.scalar(select(StockLot.id).where(StockLot.product_id == product_id).limit(1)):
         raise HTTPException(409, "เปลี่ยนหน่วยไม่ได้ เพราะสินค้านี้มีของเข้าคลังแล้ว")
     for key, value in data.model_dump().items():
         setattr(product, key, value)
@@ -56,7 +61,7 @@ def adjust_up(db, data, user) -> StockLot:
             qty=data.qty,
             reason=data.reason,
             created_by=user.id,
-            movement_type="adjust" if data.source_type == "adjustment" else "opening",
+            movement_type=MOVEMENT_TYPE_BY_SOURCE[data.source_type],
         )
     )
     db.commit()

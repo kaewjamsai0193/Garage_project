@@ -64,6 +64,12 @@
   .btn-secondary {
     @apply border border-line bg-white text-ink hover:bg-surface;
   }
+  .btn-ghost {
+    @apply text-ink hover:bg-surface;
+  }
+  .btn-icon {
+    @apply min-w-11 px-0;
+  }
 
   .tabs {
     @apply flex gap-1 overflow-x-auto border-b border-line;

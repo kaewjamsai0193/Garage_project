@@ -1,36 +1,27 @@
-# เฟส 0 — ติดตั้งและตั้งโครง
+# เฟส 0 — ติดตั้ง + โครงเปล่า
 
-**จบเฟสนี้แล้ว** `docker compose up` ขึ้นครบ 3 ตัว · เปิด http://localhost:8000/api/health เห็น `{"ok":true}` · เปิด http://localhost:5173 เห็นหน้าเว็บ
+**จบเฟสนี้:** `docker compose up --build` ขึ้นครบ 3 ตัว · http://localhost:8000/api/health ได้ `{"ok":true}` · http://localhost:5173 เปิดหน้าเว็บได้
 
-ทั้งเฟสเป็น config ล้วน ไม่มี logic ให้คิด แต่ตั้งผิดตรงนี้จะไปเจ็บตอนเฟสหลัง
+**ในเครื่องมีแค่** Docker Desktop + Git — Python กับ Node รันในคอนเทนเนอร์ทั้งหมด
 
-## ติดตั้งลงเครื่อง (ทำครั้งเดียว)
+> โค้ดในไฟล์นี้คือของจริงใน repo ตอนจบเฟส 3 · ถ้าไฟล์จริงเปลี่ยน ให้ยึดไฟล์จริง
 
-| โปรแกรม | เอาไว้ทำอะไร | ติดตั้งยังไง |
-|---|---|---|
-| Docker Desktop | รัน db + api + web ทั้งหมด | โหลดจาก docker.com เปิดทิ้งไว้ตอนทำงาน |
-| Git | เก็บประวัติโค้ด | `winget install Git.Git` |
-| VS Code | เขียนโค้ด | `winget install Microsoft.VisualStudioCode` |
-
-**ไม่ต้องลง Python ไม่ต้องลง Node ลงเครื่อง** ทุกอย่างรันใน Docker
-ข้อดีคือเครื่องไม่รก และย้ายไปเครื่องไหนก็ได้ผลเหมือนกัน
-เช็คว่าพร้อม: `docker --version` กับ `docker compose version` ต้องขึ้นเลขเวอร์ชัน
-
-## โครงโฟลเดอร์
+## ขึ้นระบบแล้วเกิดอะไร
 
 ```
-project/
-  .env  .env.example  .gitignore  docker-compose.yml
-  db/init/01-test-db.sql
-  backend/
-    Dockerfile  requirements.txt  alembic.ini  pytest.ini  ruff.toml
-    app/__init__.py  app/main.py  app/db.py  app/models.py
-    alembic/env.py  alembic/script.py.mako  alembic/versions/.gitkeep
-    tests/test_health.py
-  frontend/
-    package.json  vite.config.js  index.html  .prettierrc
-    src/main.jsx  src/index.css
+cp .env.example .env   → กรอก JWT_SECRET · ADMIN_USERNAME · ADMIN_PASSWORD
+docker compose up --build
+ ├─ db   postgres:16 → (volume ใหม่เท่านั้น) db/init/01-test-db.sql สร้างฐาน garage_test → healthcheck
+ ├─ api  รอ db healthy → alembic upgrade head → uvicorn --reload
+ └─ web  npm install → vite dev --host · /api/* ส่งต่อไป http://api:8000
 ```
+
+## กฎหลัก
+
+- **ทุกอย่างรันใน docker** ติดตั้งแพ็กเกจเพิ่มก็สั่งผ่านคอนเทนเนอร์
+- **เปิด port เท่าที่ใช้** — db ไม่เปิดเลย · api เปิดเฉพาะเครื่องนี้ · web เปิดทั้งวงแลนให้มือถือ
+- **migration รันเองทุกครั้งที่ api เริ่ม** ฐานตรงกับโค้ดเสมอ
+- **api รอ db healthcheck** ไม่งั้น alembic พังทุกครั้งที่เปิดเครื่องใหม่
 
 ---
 
@@ -44,7 +35,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
-    ports: ["5432:5432"]
+    # ไม่เปิด port ออกนอก docker: api ต่อผ่าน db:5432 · เข้าฐานเองใช้ docker compose exec db psql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 3s
@@ -55,7 +46,7 @@ services:
     depends_on:
       db: { condition: service_healthy }
     volumes: ["./backend:/app"]
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:8000:8000"]  # /docs เปิดจากเครื่องนี้ มือถือเข้าผ่าน 5173 (proxy ภายใน)
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --reload"
   web:
     image: node:22
@@ -68,18 +59,15 @@ volumes:
   pgdata:
 ```
 
-**ทำไมถึงเขียนแบบนี้**
+- `depends_on: condition: service_healthy` api รอจน Postgres รับ connection ได้จริง
+- `./db/init` → `/docker-entrypoint-initdb.d` Postgres รันไฟล์ในนั้นให้**ครั้งเดียวตอนสร้าง volume ใหม่** (สร้างฐานเทสต์)
+- `./backend:/app` โค้ดในเครื่องกับในคอนเทนเนอร์เป็นไฟล์เดียวกัน `--reload` เห็นทันทีที่แก้
+- `/web/node_modules` เป็น volume เปล่าซ้อนทับ กัน `node_modules` ของ Windows ปนกับของ Linux
+- `$$POSTGRES_USER` สองดอลลาร์ เพราะ compose กินไปหนึ่งตัว
 
-- **`db` มี healthcheck และ `api` รอ `service_healthy`** — Postgres ใช้เวลาสักพักกว่าจะรับ connection ถ้าไม่รอ `alembic upgrade head` จะพังทุกครั้งที่เปิดเครื่องใหม่
-- **`./db/init` map เข้า `/docker-entrypoint-initdb.d`** — Postgres รันไฟล์ในนั้นให้อัตโนมัติ **ครั้งเดียวตอนสร้าง volume ใหม่** ใช้สร้างฐาน `garage_test` ให้ pytest
-- **`volumes: ["./backend:/app"]`** — โค้ดในเครื่องกับในคอนเทนเนอร์เป็นตัวเดียวกัน แก้แล้ว `--reload` เห็นทันที ไม่ต้อง build ใหม่
-- **`/web/node_modules` เป็น volume เปล่าซ้อนทับ** — กัน `node_modules` ของ Windows ทับของในคอนเทนเนอร์ แพ็กเกจบางตัวคอมไพล์ตาม OS ปนกันแล้วพังแบบหาสาเหตุยาก
-- **`alembic upgrade head` อยู่ในคำสั่งเริ่ม api** — ฐานข้อมูลตามโค้ดเสมอ ไม่มีวันลืมรัน migration
-- **`$$POSTGRES_USER` มีสองดอลลาร์** — compose กิน `$` ไปหนึ่งตัว ที่เหลือส่งให้ shell ในคอนเทนเนอร์
+## `.env.example` → copy เป็น `.env`
 
-## `.env.example` และ `.env`
-
-```
+```ini
 POSTGRES_USER=garage
 POSTGRES_PASSWORD=garage
 POSTGRES_DB=garage
@@ -87,42 +75,21 @@ DATABASE_URL=postgresql+psycopg://garage:garage@db:5432/garage
 TEST_DATABASE_URL=postgresql+psycopg://garage:garage@db:5432/garage_test
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRE_MINUTES=720
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin1234
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
 ```
 
-`.env.example` เข้า git · `.env` **ห้ามเข้า** (`.gitignore` กันไว้แล้ว)
-
-```
-cp .env.example .env
-```
-แล้วแก้ `JWT_SECRET` ในไฟล์ `.env` เป็นอะไรก็ได้ที่ยาว ๆ สุ่ม ๆ
-
-- **ทำไมต้องมีสองไฟล์** คนที่ clone ไปต้องรู้ว่าต้องตั้งตัวแปรอะไรบ้าง แต่ต้องไม่ได้ค่าจริง
-- **ทำไม host ใน `DATABASE_URL` เป็น `db`** ในเครือข่ายของ compose ชื่อ service คือชื่อเครื่อง ไม่ใช่ `localhost`
-- **ทำไมมี `TEST_DATABASE_URL` แยก** pytest ล้างทุกตารางก่อนทุกเทสต์ ถ้าชี้ฐานเดียวกับของจริงคือข้อมูลหายเกลี้ยง
-- **`postgresql+psycopg://`** ไม่ใช่ `postgresql://` เพราะเราใช้ psycopg 3 ถ้าไม่ระบุ SQLAlchemy จะไปหา psycopg2 ที่ไม่ได้ลงไว้
-
-## `.gitignore`
-
-```
-.env
-__pycache__/
-.pytest_cache/
-node_modules/
-dist/
-guide/
-.venv/
-```
-
-`guide/` คือโฟลเดอร์คู่มือนี้ ไม่ใช่โค้ดของระบบ เลยไม่เอาเข้า git
-`.venv/` เผื่อสร้าง Python venv ในเครื่องไว้ให้ VS Code เดา type หรือรัน ruff นอก Docker (ไม่บังคับ)
+- `.env.example` เข้า git (แม่แบบ) · `.env` **ห้ามเข้า git** (`.gitignore` กันไว้)
+- ต้องกรอกเอง: `JWT_SECRET` (ยาว ๆ สุ่ม ๆ) · `ADMIN_USERNAME` · `ADMIN_PASSWORD` (≥ 6 ตัว) — เว้นว่างหรือใช้ค่าตัวอย่าง api จะไม่ยอมเริ่ม (เฟส 1)
+- ไม่ต้องใช้ python-dotenv เพราะ compose ใส่ env ให้ทุก service
 
 ## `db/init/01-test-db.sql`
 
 ```sql
 create database garage_test;
 ```
+
+ฐานแยกให้ pytest ล้างได้ทุกเทสต์โดยไม่แตะข้อมูลจริง
 
 ## `backend/Dockerfile`
 
@@ -134,7 +101,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ```
 
-**ทำไม copy `requirements.txt` ก่อน copy โค้ด** — Docker cache เป็นชั้น ๆ ถ้า copy ทุกอย่างพร้อมกัน แก้โค้ดบรรทัดเดียวก็ต้อง `pip install` ใหม่หมด แยกแบบนี้ชั้น pip ถูก cache ไว้จนกว่า requirements จะเปลี่ยน
+copy `requirements.txt` ก่อนโค้ด — Docker cache เป็นชั้น แก้โค้ดอย่างเดียวไม่ต้องลงแพ็กเกจใหม่
 
 ## `backend/requirements.txt`
 
@@ -146,29 +113,16 @@ psycopg[binary]>=3.2
 alembic>=1.13
 pydantic>=2.8
 pyjwt>=2.8
-pwdlib[argon2]>=0.2
 pytest>=8
 httpx>=0.27
+pwdlib[argon2]>=0.2
 ruff>=0.6
 ```
 
-**บรรทัดสุดท้ายของไฟล์ต้องขึ้นบรรทัดใหม่** ถ้าไม่มี แล้ววันหลังต่อท้ายด้วย `echo "x" >> requirements.txt` สองบรรทัดจะติดกันเป็น `httpx>=0.27ruff>=0.6` แล้ว `docker compose build` พัง (เคยเจอจริง)
+- `pwdlib[argon2]` แทน passlib (เลิกพัฒนาแล้ว และพังกับ bcrypt รุ่นใหม่)
+- บรรทัดสุดท้ายต้องขึ้นบรรทัดใหม่ ไม่งั้นต่อท้ายไฟล์แล้วสองแพ็กเกจติดกัน
 
-| แพ็กเกจ | ทำไมต้องมี |
-|---|---|
-| fastapi + uvicorn | เว็บเซิร์ฟเวอร์ |
-| sqlalchemy 2 + psycopg | คุยกับ Postgres |
-| alembic | เปลี่ยนโครงฐานข้อมูลแบบมีประวัติ |
-| pydantic 2 | ตรวจข้อมูลเข้า-ออก |
-| pyjwt | token ล็อกอิน |
-| pwdlib[argon2] | hash รหัสผ่านด้วย Argon2 (`[argon2]` ลง `argon2-cffi` ที่เป็นตัวคำนวณจริงมาด้วย) |
-| pytest + httpx | เทสต์ (httpx เป็นตัวที่ `TestClient` ใช้ยิง request) |
-| ruff | จัดรูปแบบโค้ด (`ruff format`) + หาจุดผิดที่เห็นได้โดยไม่ต้องรัน (`ruff check`) เช่น import ที่ไม่ได้ใช้ ตัวเดียวแทน black + isort + flake8 |
-
-**ไม่ใช้ passlib** เลิกพัฒนาแล้ว และพังกับ bcrypt รุ่นใหม่ · `pwdlib` คือตัวที่เอกสาร FastAPI แนะนำแทน
-**ไม่มี python-dotenv** เพราะ compose ใส่ env ให้ตั้งแต่แรก
-
-## `backend/pytest.ini` และ `backend/alembic.ini`
+## `backend/pytest.ini` · `backend/alembic.ini` · `backend/ruff.toml`
 
 ```ini
 [pytest]
@@ -176,18 +130,12 @@ pythonpath = .
 testpaths = tests
 ```
 
-`pythonpath = .` ทำให้ `import app.xxx` ในเทสต์ทำงานโดยไม่ต้องลงแพ็กเกจ
-
 ```ini
 [alembic]
 script_location = %(here)s/alembic
 prepend_sys_path = .
 path_separator = os
 ```
-
-ไฟล์มาตรฐานของ alembic ยาวกว่านี้มาก ที่เหลือเป็นค่าที่เราไม่ใช้ (log config, url ที่เราอ่านจาก env เอง) ตัดทิ้งหมด
-
-## `backend/ruff.toml`
 
 ```toml
 line-length = 120
@@ -205,18 +153,8 @@ ignore = ["B008", "FURB157", "EXE002"]
 known-third-party = ["alembic"]
 ```
 
-- **`line-length = 120`** ค่าเริ่มต้นคือ 88 ซึ่งแคบไปสำหรับ query SQLAlchemy ที่ยาวอยู่แล้ว บรรทัดจะถูกหักจนอ่านยากกว่าเดิม
-- **ปิด B008** ruff เตือน "อย่าเรียกฟังก์ชันใน default argument" ซึ่งถูกในโค้ด Python ทั่วไป แต่ `db=Depends(get_db)` คือวิธีที่ FastAPI ออกแบบมาให้เขียน
-- **`extend-exclude = ["alembic/versions"]`** ไฟล์ migration alembic เขียนให้ ใช้รูปแบบของมันเอง ไม่ใช่โค้ดที่เราดูแล
-- **ปิด EXE002** บน Windows โฟลเดอร์ที่ mount เข้าคอนเทนเนอร์ Linux ทุกไฟล์ถูกมองว่า "รันได้" ruff จะเตือนทุกไฟล์ว่าไม่มี `#!` บรรทัดแรก ซึ่งไม่ใช่ปัญหาจริง
-- **`known-third-party = ["alembic"]`** ruff เรียง import เป็นสามกลุ่ม: stdlib · library ภายนอก · โค้ดเรา มันเห็นโฟลเดอร์ `backend/alembic/` แล้วเดาว่า `alembic` เป็นโค้ดเรา บรรทัดนี้บอกว่าเป็น library
-
-ใช้ยังไง (รันในคอนเทนเนอร์ api):
-
-```
-docker compose run --rm api ruff check --fix .   # หาจุดผิด + แก้ที่แก้เองได้ (เช่นเรียง import)
-docker compose run --rm api ruff format .        # จัดรูปแบบทุกไฟล์
-```
+- `pythonpath = .` ให้เทสต์ `import app...` ได้
+- ruff บรรทัดยาวสุด 120 (เท่า Prettier) · ปิด B008 เพราะ `Depends()` ใน default คือท่าปกติของ FastAPI
 
 ## `backend/alembic/env.py`
 
@@ -236,56 +174,7 @@ with engine.connect() as connection:
         context.run_migrations()
 ```
 
-- **ทำไมสั้นกว่าของที่ `alembic init` สร้างให้มาก** ของมาตรฐานรองรับ offline mode และอ่าน url จาก ini เราไม่ใช้ทั้งคู่
-- **ทำไมต้อง `import app.models`** alembic เทียบ `Base.metadata` กับฐานจริง ถ้าไม่ import ตารางจะยังไม่ถูกลงทะเบียน มันจะคิดว่าไม่มีตารางอะไรเลยแล้วสั่ง **drop ทิ้งทั้งหมด**
-
-`alembic/script.py.mako` เป็นแม่แบบของไฟล์ migration ใช้ของมาตรฐานจาก `alembic init` ได้เลย ไม่ต้องแก้
-
-## `backend/app/db.py` และ `backend/app/models.py`
-
-`env.py` import ทั้งสองไฟล์ และ `api` รัน `alembic upgrade head` ทุกครั้งที่เริ่ม **ถ้าไม่มีสองไฟล์นี้ api จะดับตั้งแต่เฟส 0**
-ใส่แค่ขั้นต่ำที่ทำให้ import ได้ เฟส 1 ค่อยเติมของจริง
-
-```python
-# backend/app/db.py
-import os
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase
-
-engine = create_engine(os.environ["DATABASE_URL"])
-
-
-class Base(DeclarativeBase):
-    pass
-```
-
-```python
-# backend/app/models.py  — ยังไม่มีตาราง เฟส 1 เริ่มที่ users
-from app.db import Base  # noqa: F401
-```
-
-`backend/app/__init__.py` เป็นไฟล์ว่าง มีไว้ให้ Python มองโฟลเดอร์ `app` เป็นแพ็กเกจ
-
-`backend/alembic/versions/` ต้องมีโฟลเดอร์อยู่ (ยังว่าง) ใส่ไฟล์ว่าง `.gitkeep` ไว้ git จะได้เก็บโฟลเดอร์นี้
-
-ตอนนี้ `alembic upgrade head` ไม่มีอะไรให้ทำ แต่รันผ่าน = ท่อจาก compose → alembic → Postgres ต่อกันแล้ว
-
-## `backend/app/main.py`
-
-```python
-from fastapi import FastAPI
-
-app = FastAPI(title="ระบบจัดการอู่ซ่อมรถ")
-
-
-@app.get("/api/health")
-def health():
-    """GET /api/health: เช็คว่าเซิร์ฟเวอร์ยังทำงาน"""
-    return {"ok": True}
-```
-
-**docstring บรรทัดเดียวใต้ทุกฟังก์ชัน** เป็นกติกาของทั้งโปรเจ็ค: บอกว่าทำอะไร รับข้อมูลจากไหน ส่งไปไหน สั้น ๆ พอให้อ่านผ่านแล้วรู้เรื่องโดยไม่ต้องไล่โค้ด ฝั่ง JS ใช้ `//` บรรทัดเดียวเหนือฟังก์ชันแทน
+`import app.models` ให้ alembic เห็นทุกตาราง ตอน `--autogenerate` จะได้เทียบกับฐานจริงได้
 
 ## `backend/tests/test_health.py`
 
@@ -299,9 +188,7 @@ def test_health():
     assert TestClient(app).get("/api/health").json() == {"ok": True}
 ```
 
-เทสต์แรกไม่ได้ทดสอบ logic อะไร มันทดสอบว่า **ท่อทั้งเส้นต่อกันแล้ว** — import ได้ แอปสร้างได้ route ตอบได้
-
----
+เทสต์แรกไว้เช็คว่าโครงเทสต์ทำงาน (endpoint `/api/health` อยู่ใน `app/main.py` เฟส 1)
 
 ## `frontend/package.json`
 
@@ -333,32 +220,16 @@ def test_health():
 }
 ```
 
-| แพ็กเกจ | ทำไมต้องมี |
+| แพ็กเกจ | ใช้ทำอะไร |
 |---|---|
-| react + react-dom + react-router-dom | หน้าจอ + เปลี่ยนหน้าตาม URL |
-| vite + tailwind | รัน dev server / build · จัดหน้าด้วย class |
-| axios | ตัวยิง request ใน `api.js` (เฟส 1) |
-| **@tanstack/react-query** | **ดึงข้อมูลจาก backend และจำไว้ (cache)** — บันทึกอะไรแล้วสั่ง "ข้อมูลสินค้าเก่าแล้ว" ครั้งเดียว ทุกหน้าที่ใช้ข้อมูลนั้นโหลดใหม่เอง (เฟส 1) |
-| **react-hook-form** | **เก็บค่าในฟอร์ม** — ใช้ `register("ชื่อฟิลด์")` แทนการเขียน `useState` + `onChange` เองทุกช่อง (เฟส 1) |
-| prettier | จัดรูปแบบโค้ดหน้าจอ `npm run format` |
+| react · react-dom · react-router-dom | หน้าจอ + URL |
+| @tanstack/react-query | ดึงข้อมูล + cache + โหลดใหม่หลังบันทึก |
+| react-hook-form | เก็บค่าในฟอร์ม |
+| axios | ยิง HTTP (ใช้ใน `api.js` ที่เดียว) |
+| tailwindcss · @tailwindcss/vite | CSS (v4 ไม่มี `tailwind.config.js` ตั้งสีใน CSS เลย) |
+| prettier | จัดรูปแบบโค้ด |
 
-**ทำไมเลือกสองตัวที่ตัวหนา** — ระบบนี้ข้อมูลโยงกันเยอะ: รับของเข้า → Lot, คงเหลือ, สมุดสต็อก, สถานะ PO เปลี่ยนพร้อมกัน ถ้าเขียนเองต้องจำว่า "บันทึกแล้วต้องโหลดอะไรใหม่บ้าง" ทุกปุ่ม ลืมตัวเดียวคือหน้าจอโชว์เลขเก่าแบบไม่มีใครรู้ ส่วนฟอร์มบิลกับใบสั่งซื้อมีหลายแถวเพิ่ม/ลบได้ เขียนเองจะยุ่งเร็วมาก
-ทั้งสองตัวเป็นของมาตรฐานที่คนเขียน React อ่านออกทันทีและมีเอกสารให้เปิด คุ้มกว่าเขียน hook เอง
-
-**ของที่ไม่มี** — UI library, icon library, state library อื่น ทุกตัวที่เพิ่มคือของที่ต้องตามอัปเดตและต้องเข้าใจตอนมันพัง
-
-## `frontend/.prettierrc`
-
-```json
-{ "printWidth": 120 }
-```
-
-ใช้ค่ามาตรฐานของ Prettier ทั้งหมด (double quote, มี `;`, ย่อหน้า 2 ช่อง) เปลี่ยนแค่ความยาวบรรทัดให้เท่ากับฝั่ง backend
-ค่าเริ่มต้น 80 จะหัก JSX ที่มี className ยาว ๆ จนเกือบทุก element แตกเป็นหลายบรรทัด
-
-**ทำไมต้องมีตัวจัดรูปแบบ** — ไม่ต้องเถียงหรือจำเรื่องย่อหน้า เว้นวรรค `;` อีกเลย ทุกไฟล์หน้าตาเหมือนกัน รัน `npm run format` ก่อน commit
-
-**Tailwind v4 ไม่มี `tailwind.config.js`** และไม่ต้องลง postcss/autoprefixer แล้ว ตั้งสีใน CSS ผ่าน `@theme` แทน (เฟส 1)
+ไม่มี UI / icon / state library อื่น — ทุกตัวที่เพิ่มคือของที่ต้องดูแลต่อ
 
 ## `frontend/vite.config.js`
 
@@ -373,11 +244,14 @@ export default defineConfig({
 });
 ```
 
-- **proxy `/api` → `http://api:8000`** หน้าเว็บเรียก `/api/...` เป็น path เดียวกับตัวเอง เลยไม่เจอ CORS และไม่ต้องมีตัวแปร base url ให้ตั้งตอน deploy
-- host เป็น `api` ไม่ใช่ `localhost` เพราะ vite รันในคอนเทนเนอร์ web คนละตัวกับ api
-- **`usePolling: true`** Docker บน Windows ส่งสัญญาณไฟล์เปลี่ยนข้ามเครื่องไม่ได้ ถ้าไม่ poll แก้โค้ดแล้วหน้าเว็บจะนิ่งสนิท
+- proxy `/api` → `http://api:8000` หน้าเว็บเรียก path เดียวกับตัวเอง ไม่เจอ CORS ไม่ต้องตั้ง base URL
+- `usePolling: true` จำเป็นบน Windows: ไฟล์ที่ mount เข้า docker ไม่ส่งสัญญาณว่าถูกแก้
 
-## `frontend/index.html` · `src/main.jsx` · `src/index.css`
+## `frontend/.prettierrc` · `frontend/index.html`
+
+```json
+{ "printWidth": 120 }
+```
 
 ```html
 <!doctype html>
@@ -397,61 +271,17 @@ export default defineConfig({
 </html>
 ```
 
-```jsx
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
-
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <p className="p-4 text-xl">อู่ซ่อมรถ</p>
-  </StrictMode>,
-);
-```
-
-```css
-@import "tailwindcss";
-```
-
-`lang="th"` กับ `viewport` ใส่ตั้งแต่แรก เพราะทั้งระบบเป็นภาษาไทยและต้องใช้บนมือถือ
-ฟอนต์ IBM Plex Sans Thai โหลดจาก Google Fonts เฟส 1 ตั้งเป็นฟอนต์หลักใน `index.css`
+`lang="th"` + ฟอนต์ IBM Plex Sans Thai · `src/main.jsx` กับ `src/index.css` ตัวจริงอยู่ในเฟส 1
 
 ---
 
-## คำสั่งของเฟสนี้
-
-**ถ้าโฟลเดอร์นี้เคยรัน `docker compose up` มาก่อน** ฐานเก่ายังจำ migration ของโค้ดชุดก่อนไว้ เฟส 1 จะพังด้วย `Can't locate revision` ล้างทิ้งก่อนครั้งเดียว:
+## เช็คว่าเสร็จ
 
 ```
-docker volume rm project_final_pgdata
+curl http://localhost:8000/api/health            # {"ok":true}
+docker compose exec api python -m pytest -q      # test_health ผ่าน
 ```
 
-```
-cp .env.example .env
-docker compose build api                              # ลง Python libs (ครั้งแรก 1-2 นาที)
-docker compose run --rm --no-deps web npm install     # ลง Node libs
-docker compose up -d
-```
+เปิด http://localhost:5173 เห็นหน้าเว็บ · http://localhost:8000/docs เห็นเอกสาร API
 
-## เช็คว่าเฟสนี้เสร็จ
-
-```
-docker compose ps                      # api, db (healthy), web ขึ้นครบ
-curl http://localhost:8000/api/health  # {"ok":true}
-docker compose run --rm api pytest     # 1 passed
-```
-
-เปิด http://localhost:5173 เห็นคำว่า "อู่ซ่อมรถ" · เปิด http://localhost:8000/docs เห็นหน้าเอกสาร API ที่ FastAPI สร้างให้เอง
-
-ติดตรงไหนดูตารางท้าย [commands.md](commands.md)
-
-## git
-
-```
-docker compose run --rm api ruff format .
-docker compose exec -T web npm run format
-git add -A
-git commit -m "chore: project scaffold"
-```
-
-(ครั้งแรกจริง ๆ ที่ยังไม่มี repo ให้ `git init` ก่อน)
+ติดปัญหา → ตาราง "เวลาติด" ใน [commands.md](commands.md)

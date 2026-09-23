@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.auth import current_user, require_role
+from app.auth import admin, current_user
 from app.db import get_db
 from app.models import Setting
 from app.settings import service
@@ -16,6 +16,6 @@ def get_settings(db=Depends(get_db), _=Depends(current_user)):
 
 
 @router.put("/settings", response_model=SettingsOut)
-def update_settings(data: SettingsIn, db=Depends(get_db), _=Depends(require_role("admin"))):
+def update_settings(data: SettingsIn, db=Depends(get_db), _=Depends(admin)):
     """PUT /api/settings: admin ส่ง SettingsIn → service.update_settings → คืนค่าที่บันทึกแล้ว"""
     return service.update_settings(db, data)

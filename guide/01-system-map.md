@@ -1,153 +1,146 @@
-# แผนที่ระบบ
+# แผนที่ระบบ — ข้อมูลเดินจากไหนไปไหน
 
-อ่านคู่กับ [เฟส 1](01-base-login.md) — เน้นว่า **ไฟล์ไหนเรียกฟังก์ชันไหน และข้อมูลไหลไปทางใด**
+อ่านไฟล์นี้ก่อนเสมอ แล้วเปิดโค้ดจริงตามชื่อไฟล์/ฟังก์ชันที่ชี้
 
-## 1. ภาพรวม: บ้านหลังเดียว 3 ห้อง
-
-```
-┌──────────────────────── docker compose ────────────────────────┐
-│                                                                │
-│   web (หน้าจอ)          api (สมอง)            db (โกดังข้อมูล)   │
-│   React + Vite    ───►  FastAPI (Python) ───► PostgreSQL        │
-│   localhost:5173        localhost:8000        localhost:5432    │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
-```
-
-จำสั้น ๆ: **หน้าจอ → `api.js` → Vite proxy → `<โดเมน>/router.py` → `<โดเมน>/service.py` → `models.py` → PostgreSQL**
-
-## 2. ตอนสั่ง `docker compose up`
+## 1. ภาพรวม
 
 ```
-db   : Postgres เริ่ม → (volume ใหม่เท่านั้น) รัน db/init/01-test-db.sql สร้างฐาน garage_test
-          │ healthcheck ผ่าน
-          ▼
-api  : alembic upgrade head
-          alembic/env.py ── import app.models ──► ลงทะเบียนทุกตารางใน Base.metadata
-          alembic/versions/*.py ──► สร้าง/แก้ตารางให้ตรงกับโค้ด
-       uvicorn app.main:app
-          main.py:lifespan() ──► users/service.py:ensure_admin() ──► auth.py:hash_password()
-                                  (สร้าง admin จาก .env ถ้ายังไม่มีผู้ใช้เลย)
-web  : npm install → vite dev server (proxy /api → http://api:8000)
+มือถือ / คอม
+   │ http://<เครื่องอู่>:5173
+   ▼
+web  (React + Vite)   ── /api/* ──►  api  (FastAPI)  ──►  db  (PostgreSQL)
+เปิดให้ทั้งวงแลน                     127.0.0.1:8000        ใน docker เท่านั้น
+                                     (ไว้เปิด /docs)
 ```
 
-## 3. ตอนกดเข้าสู่ระบบ
+- มือถือเข้าผ่าน 5173 อย่างเดียว Vite ส่ง `/api` ต่อให้ api ภายใน docker เอง
+- ฐานข้อมูลไม่เปิดออกนอก docker · เข้าเองใช้ `docker compose exec db psql -U garage -d garage`
 
-```text
-handleSubmit → signIn.mutate(form)            frontend/src/pages/LoginPage.jsx   (react-hook-form รวบค่า → useMutation)
-  → useAuth().login()                         frontend/src/auth.jsx
-    → api("/auth/login", POST)                frontend/src/api.js
-      → POST /api/auth/login                  Vite proxy → container api
-        → login()                             backend/app/users/auth_router.py
-          → LoginIn                           backend/app/users/schemas.py   (ตรวจรูปแบบ + ตัดช่องว่าง)
-          → get_db()                          backend/app/db.py
-          → select(User)                      backend/app/models.py
-          → verify_password()                 backend/app/auth.py
-          → create_token()                    backend/app/auth.py
-          → LoginOut                          backend/app/users/schemas.py   (UserOut ไม่มี password_hash)
-    → setToken() + setUser()                  frontend/src/auth.jsx
-  → <Navigate to="/">                         frontend/src/pages/LoginPage.jsx
+## 2. หนึ่งคำขอเดินยังไง
+
+```
+หน้าจอ  useQuery (อ่าน) / useMutation (บันทึก)
+  → frontend/src/api.js          แนบ token · error → ข้อความไทย · 401 → ลบ token ไปหน้า login
+  → Vite proxy /api → api:8000
+  → <โดเมน>/router.py            URL + ตรวจสิทธิ์ · อ่านข้อมูลธรรมดาได้ แต่ไม่เขียน
+  → <โดเมน>/service.py           กฎธุรกิจ · ล็อก · เขียนฐาน (ที่เดียวที่ commit)
+  → models.py → PostgreSQL
+
+ขากลับ: ORM object → schema (ตัดช่องที่ไม่ให้เห็น: password_hash, ต้นทุน) → JSON → cache → หน้าจอ
 ```
 
-## 4. ตอนกด F5 หลังเคยล็อกอิน
+## 3. ตอนเปิดระบบ (`docker compose up`)
 
-token ยังอยู่ใน `localStorage` แต่ frontend **ยังไม่เชื่อทันที** ต้องถาม backend ก่อน
-
-```text
-AuthProvider useEffect                        frontend/src/auth.jsx     user = undefined (Guard ยังไม่วาด)
-  → api("/auth/me")                           frontend/src/api.js
-    → me()                                    backend/app/users/auth_router.py
-      → current_user()                        backend/app/auth.py
-        → jwt.decode() → db.get(User)         token ยังไม่หมดอายุ และบัญชียัง active?
-  ผ่าน  → setUser(object)  → Guard วาด AppLayout
-  ไม่ผ่าน (401) → api.js ลบ token + ไป /login
+```
+db   สร้างฐาน garage_test (เฉพาะ volume ใหม่) → healthcheck ผ่าน
+api  alembic upgrade head                      ตารางตามโค้ดเสมอ
+     import auth.py                            JWT_SECRET ว่าง/ค่าตัวอย่าง → ไม่ยอมเริ่ม
+     main.py:lifespan → users/service.py:ensure_admin()
+                                               ยังไม่มี admin → สร้างจาก ADMIN_* ใน .env
+                                               (ว่าง หรือรหัส < 6 ตัว → ไม่ยอมเริ่ม)
+web  npm install → vite dev
 ```
 
-| ค่า `user` | ความหมาย | `Guard` ทำอะไร |
+## 4. ล็อกอิน
+
+```
+pages/LoginPage.jsx      handleSubmit → signIn.mutate(form)
+  → auth.jsx:login       api("/auth/login", POST)
+  → users/auth_router.py:login
+       หา user ตามชื่อ → auth.py:verify_password → auth.py:create_token (user_id + exp)
+       ชื่อผิด / รหัสผิด / บัญชีปิด → 401 ข้อความเดียวกัน
+  ← { access_token, user }
+  → setToken (localStorage) + setUser → LoginPage เจอ user → <Navigate to="/">
+```
+
+## 5. เปิดเว็บใหม่ / กด F5
+
+```
+auth.jsx (useEffect ครั้งแรก)
+  ไม่มี token → user = null
+  มี token    → GET /auth/me → auth.py:current_user
+                 ถอด token → db.get(User) → ต้อง is_active
+                 ผ่าน → setUser(user) · ไม่ผ่าน 401 → api.js ลบ token → /login
+```
+
+| `user` | ความหมาย | `Guard` ใน main.jsx |
 |---|---|---|
-| `undefined` | กำลังตรวจ `/auth/me` | ยังไม่วาด ป้องกันหน้ากระพริบ |
+| `undefined` | กำลังเช็ค `/auth/me` | ไม่วาดอะไร (กันหน้ากระพริบ) |
 | `null` | ไม่ได้ล็อกอิน | ไป `/login` |
-| object | ล็อกอินแล้ว | แสดง `AppLayout` และหน้าข้างใน |
+| object | ล็อกอินแล้ว | วาดหน้า · บทบาทไม่อยู่ใน `roles` → ไป `/` |
 
-## 5. ตอนเปิดหน้าที่มีข้อมูล และตอนกดบันทึก (ตั้งแต่เฟส 2)
+## 6. อ่านข้อมูล — `useQuery`
 
-**เปิดหน้า** — ตัวอย่างหน้ารายชื่อผู้ใช้
-
-```text
-useQuery({ queryKey: ["users"] })             frontend/src/pages/UsersPage.jsx
-  → queryClient มีของใต้ ["users"] ไหม        frontend/src/api.js
-     มี   → คืนของเดิมทันที (แล้วอาจดึงใหม่เบื้องหลัง)
-     ไม่มี → queryFn: api("/" + ["users"].join("/"))  → GET /api/users
-  → { data, error }                           หน้าจอวาดตาม data
+```
+useQuery({ queryKey: ["products", id, "lots"] })
+  → api.js queryFn: "/" + queryKey.join("/")  →  GET /api/products/{id}/lots
+  → เก็บใน cache ใต้กุญแจนั้น
 ```
 
-**กดบันทึก** — ตัวอย่างแก้ผู้ใช้
+- กุญแจ = path ของ API แยกเป็นท่อน · ท่อนแรกคือ "กลุ่มข้อมูล"
+- หน้าอื่นขอกุญแจเดียวกัน → ได้ของจาก cache ทันที แล้วดึงใหม่เบื้องหลังหนึ่งครั้ง
 
-```text
-handleSubmit → save.mutate(form)              frontend/src/pages/UserFormPage.jsx
-  → mutationFn: api("/users/5", PATCH)        frontend/src/api.js → backend
-  → onSuccess:
-      invalidateQueries({ queryKey: ["users"] })   ข้อมูลใต้ ["users"] เก่าแล้ว
-        → ทุกหน้าที่ใช้ ["users"] อยู่ ดึงใหม่เอง (UsersPage + UserFormPage)
-      close()                                 ปิดป๊อปอัพ
+## 7. บันทึก — `useMutation`
+
+```
+handleSubmit → save.mutate(form)
+  → api(path, { method, body }) → router → service → commit
+  → onSuccess: invalidateQueries({ queryKey: ["กลุ่ม"] })
+       → ทุก useQuery ที่กุญแจขึ้นต้นด้วยกลุ่มนั้นดึงใหม่เอง
 ```
 
-**กฎของ `queryKey`** — ท่อนแรกคือกลุ่มข้อมูล ที่เหลือคือ path ต่อ
+| บันทึกอะไร | หลังสำเร็จ |
+|---|---|
+| สินค้า · ปรับสต็อก | invalidate `["products"]` → รายการ + ตัวเดียว + Lot + สมุดสต็อก |
+| ผู้ใช้ | invalidate `["users"]` · ถ้าแก้บัญชีตัวเอง `setUser` ด้วย (ชื่อในแถบข้าง) |
+| ค่าตั้งอู่ | `setQueryData(["settings"], ค่าที่ตอบกลับ)` ไม่ต้อง GET ซ้ำ |
+| ออกจากระบบ | `queryClient.clear()` ล้าง cache ทั้งหมด (กันคนถัดไปเห็นต้นทุนค้าง) |
 
-| queryKey | ยิง | invalidate ด้วย `["products"]` โดนไหม |
-|---|---|---|
-| `["products"]` | `GET /products` | โดน |
-| `["products", "5"]` | `GET /products/5` | โดน |
-| `["products", "5", "lots"]` | `GET /products/5/lots` | โดน |
-| `["users"]` | `GET /users` | ไม่โดน |
+## 8. ตรวจสิทธิ์
 
-## 6. การตรวจสิทธิ์ของ API (ตั้งแต่เฟส 2)
-
-การซ่อนเมนูใน `AppLayout.jsx` ช่วยแค่เรื่องหน้าจอ ความปลอดภัยจริงอยู่ที่ backend ตัวอย่าง `PATCH /api/users/{id}`:
-
-```text
-users/router.py:update_user()
-  → Depends(admin)                  admin = require_role("admin")        auth.py
-    → current_user()                ไม่มี/ผิด token → 401
-    → user.role ไม่อยู่ใน roles     → 403
-  → users/service.py:update_user()  กฎธุรกิจ + เขียนข้อมูล
-    → db.py:get_or_404()            ไม่พบ → 404
-    → db.commit()
-  → users/schemas.py:UserOut        ส่งกลับเฉพาะฟิลด์ที่อนุญาต
+```
+router:  Depends(current_user)           ไม่มี/ผิด token/บัญชีปิด → 401
+         Depends(admin) / Depends(staff)  บทบาทไม่ตรง → 403      (ประกาศไว้ใน auth.py)
+ต้นทุน:  schemas.py:serialize_for_role  admin ได้ XxxAdminOut · คนอื่นได้ XxxOut (ไม่มีช่องต้นทุน)
 ```
 
-## 7. แผนที่ไฟล์ ณ จบเฟส 4
+หน้าจอซ่อนเมนู/ปุ่มตามบทบาท = ความสะดวกเท่านั้น ด่านจริงอยู่ที่ backend
+
+| ทำอะไร | admin | employee | mechanic |
+|---|:---:|:---:|:---:|
+| ดูสินค้า · Lot · สมุดสต็อก · ค่าตั้ง | ✅ | ✅ | ✅ |
+| เห็นต้นทุน | ✅ | – | – |
+| เพิ่ม/แก้สินค้า · ปรับลด | ✅ | ✅ | – |
+| ปรับเพิ่ม / สต็อกตั้งต้น | ✅ | – | – |
+| จัดการผู้ใช้ · แก้ค่าตั้ง | ✅ | – | – |
+
+## 9. แผนที่ไฟล์ (จบเฟส 3)
 
 ```
 backend/app/
-  main.py  db.py  auth.py  models.py  money.py  textutil.py  schemas.py
-  users/       auth_router.py  router.py  schemas.py  service.py      /api/auth  /api/users
-  settings/    router.py  schemas.py  service.py                      /api/settings
-  stock/       router.py  schemas.py  service.py                      /api/products  /api/stock
-  purchasing/  router.py  schemas.py  service.py                      /api/purchase-orders  /api/goods-receipts
-                              └─ import app.stock.service.products_by_id
+  main.py      สร้างแอป · รวม router · IntegrityError → 409 · lifespan → ensure_admin
+  db.py        engine · get_db · get_or_404 · lock_shop
+  auth.py      hash/verify รหัส · create_token · current_user · require_role · admin · staff
+  models.py    ทุกตาราง: users · settings · products · stock_lots · stock_movements
+  money.py     round_money · format_qty
+  schemas.py   In · Out · serialize_for_role
+  users/       auth_router.py (/auth/login /auth/me) · router.py (/users) · service.py · schemas.py
+  settings/    router.py (/settings) · service.py · schemas.py
+  stock/       router.py (/products /stock) · service.py · schemas.py
 
 frontend/src/
-  main.jsx  api.js  auth.jsx  index.css
-  components/  Icon AppLayout Field Modal ListLayout DataTable StatusBadge SettingsTabs
-               SearchBar DetailLayout ReasonDialog ProductSearch
-  pages/       LoginPage SettingsPage UsersPage UserFormPage ProductListPage ProductFormPage ProductDetailPage
-               PurchaseOrdersPage PurchaseOrderNewPage PurchaseOrderPage GoodsReceiptsPage GoodsReceiptNewPage GoodsReceiptPage PrintPOPage
+  main.jsx     route ทั้งหมด + Guard
+  api.js       api() · queryClient · formatMoney/formatQty/formatDate/plainNumber
+  auth.jsx     AuthProvider · useAuth · ROLE_NAME
+  components/  AppLayout ListLayout DetailLayout DataTable Modal ReasonDialog ProductModal
+               Field SearchBar SettingsTabs StatusBadge Icon
+  pages/       LoginPage SettingsPage UserListPage UserFormPage
+               ProductListPage ProductFormPage ProductDetailPage
 ```
 
-## วิธีไล่โค้ดเวลาอ่านต่อ
+เฟส 4 จะเพิ่ม: `purchasing/` · `textutil.py` · `ProductSearch` · `PurchaseOrder*Page` · `GoodsReceipt*Page`
 
-เริ่มจากสิ่งที่ผู้ใช้ทำ แล้วอ่านตามลูกศร:
+## ไล่โค้ดเวลาอ่าน
 
-```text
-หน้าจอ → useQuery (queryKey) หรือ useMutation (mutationFn) → api.js → URL → <โดเมน>/router.py → Depends/schema
-       → <โดเมน>/service.py (ถ้าเขียนข้อมูล) → models.py → db.py → PostgreSQL
-```
-
-ขากลับอ่านกลับทาง:
-
-```text
-PostgreSQL → ORM object → response_model/schema → JSON → api.js → queryClient (cache) → หน้าจอ
-```
-
-หลังบันทึก: `onSuccess` ของ `useMutation` → `invalidateQueries` → `useQuery` ที่ใช้กุญแจนั้นดึงใหม่ → หน้าจออัปเดตเอง
+เริ่มจากสิ่งที่คนกดบนจอ แล้วตามลูกศร:
+`หน้าจอ → queryKey / mutationFn → api.js → URL → router.py → service.py → models.py`

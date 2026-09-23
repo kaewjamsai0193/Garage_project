@@ -5,7 +5,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
-    ports: ["5432:5432"]
+    # ไม่เปิด port ออกนอก docker: api ต่อผ่าน db:5432 · เข้าฐานเองใช้ docker compose exec db psql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 3s
@@ -16,7 +16,7 @@ services:
     depends_on:
       db: { condition: service_healthy }
     volumes: ["./backend:/app"]
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:8000:8000"]  # /docs เปิดจากเครื่องนี้ มือถือเข้าผ่าน 5173 (proxy ภายใน)
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --reload"
   web:
     image: node:22

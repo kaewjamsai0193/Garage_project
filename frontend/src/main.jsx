@@ -11,7 +11,7 @@ import ProductFormPage from "./pages/ProductFormPage";
 import ProductListPage from "./pages/ProductListPage";
 import SettingsPage from "./pages/SettingsPage";
 import UserFormPage from "./pages/UserFormPage";
-import UsersPage from "./pages/UsersPage";
+import UserListPage from "./pages/UserListPage";
 
 const STAFF = ["admin", "employee"];
 const ADMIN = ["admin"];
@@ -62,7 +62,7 @@ createRoot(document.getElementById("root")).render(
               path="settings/users"
               element={
                 <Guard roles={ADMIN}>
-                  <UsersPage />
+                  <UserListPage />
                 </Guard>
               }
             >

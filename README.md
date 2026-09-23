@@ -94,13 +94,15 @@ frontend/src/
 
 **ทางเดินของหนึ่งคำขอ:** หน้าจอ → `api.js` → `<โดเมน>/router.py` → `<โดเมน>/service.py` → `models.py` → PostgreSQL
 
+อ่านละเอียด (ข้อมูลไหลจากไหนไปไหน + โค้ดพร้อมคำอธิบายทีละเฟส) → [guide/README.md](guide/README.md)
+
 ## เวลาติดปัญหา
 
 | อาการ | ทำอะไร |
 |---|---|
 | `port is already allocated` | มีอย่างอื่นใช้ port อยู่ → `docker compose down` ก่อน หรือเปลี่ยนเลข port ซ้ายมือใน `docker-compose.yml` |
 | api ขึ้นแล้วดับทันที | `docker compose logs api` ส่วนใหญ่คือ migration พัง หรือ `.env` ยังไม่ได้ตั้ง |
-| ล็อกอินไม่ได้ตั้งแต่ครั้งแรก | ตอนรันครั้งแรก `.env` ยังไม่มี `ADMIN_USERNAME`/`ADMIN_PASSWORD` → ตั้งค่าแล้ว `docker compose down -v` เพื่อเริ่มฐานใหม่ |
+| api ดับทันที log บอก `ตั้ง ADMIN_USERNAME ...` หรือ `ตั้ง JWT_SECRET ...` | ยังไม่ได้กรอก `.env` (หรือยังใช้ค่าตัวอย่าง) → กรอกให้ครบแล้ว `docker compose up -d` อีกครั้ง ระบบไม่ยอมสร้าง admin ชื่อ/รหัสว่าง |
 | แก้โค้ดแล้วหน้าเว็บไม่เปลี่ยน | `docker compose restart web` |
 | ลง package ใหม่แล้วหน้าเว็บขาว | `docker compose exec web npm install` แล้ว `docker compose restart web` (node_modules อยู่ในคอนเทนเนอร์) |
 | เทสต์พังเพราะตารางไม่ตรง | `docker compose exec api alembic upgrade head` |

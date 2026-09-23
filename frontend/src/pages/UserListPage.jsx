@@ -9,7 +9,7 @@ import StatusBadge from "../components/StatusBadge";
 const userStatus = (u) => (u.is_active ? "active" : "disabled");
 
 // หน้า /settings/users: GET /users แสดงรายการ, route ลูกเปิด popup เพิ่ม/แก้ผู้ใช้
-export default function UsersPage() {
+export default function UserListPage() {
   const { data, error } = useQuery({ queryKey: ["users"] });
   return (
     <ListLayout

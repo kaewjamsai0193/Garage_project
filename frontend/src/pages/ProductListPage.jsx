@@ -9,7 +9,7 @@ import SearchBar from "../components/SearchBar";
 
 const FILTERS = [
   ["active", "ใช้งานอยู่"],
-  ["low", "ต่ำกว่าขั้นต่ำ"],
+  ["low", "ถึงจุดเตือน"],
   ["inactive", "เลิกใช้"],
 ];
 
@@ -20,11 +20,10 @@ export default function ProductListPage() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("active");
   const text = q.trim().toLowerCase();
-  const items = data?.filter(
-    (p) =>
-      (filter === "active" ? p.is_active : productStatus(p) === filter) &&
-      (!text || p.code.toLowerCase().includes(text) || p.name.toLowerCase().includes(text)),
-  );
+  // แท็บ "ใช้งานอยู่" ดูที่ is_active · แท็บอื่นดูที่ป้ายสถานะ
+  const matchesFilter = (p) => (filter === "active" ? p.is_active : productStatus(p) === filter);
+  const matchesText = (p) => !text || p.code.toLowerCase().includes(text) || p.name.toLowerCase().includes(text);
+  const items = data?.filter((p) => matchesFilter(p) && matchesText(p));
 
   return (
     <ListLayout

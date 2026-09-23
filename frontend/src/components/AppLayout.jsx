@@ -3,12 +3,9 @@ import { NavLink, Outlet } from "react-router-dom";
 import { ROLE_NAME, useAuth } from "../auth";
 import Icon from "./Icon";
 
-// เฟสหลังเติมกลุ่มและเมนูที่นี่  { to, label, icon, group, roles? }
-export const GROUPS = ["คลังสินค้า"];
-export const MENU = [{ to: "/stock", label: "สต็อก", icon: "box", group: "คลังสินค้า" }];
-
-// กรองเมนูตาม role ของผู้ใช้
-export const menuFor = (role) => MENU.filter((m) => !m.roles || m.roles.includes(role));
+// เฟสหลังเติมกลุ่มและเมนูที่นี่  { to, label, icon, group } — group ต้องตรงกับชื่อใน GROUPS
+const GROUPS = ["คลังสินค้า"];
+const MENU = [{ to: "/stock", label: "สต็อก", icon: "box", group: "คลังสินค้า" }];
 
 // class ของลิงก์เมนู เปลี่ยนสีเมื่อเป็นหน้าปัจจุบัน
 const linkClass = ({ isActive }) =>
@@ -18,7 +15,6 @@ const linkClass = ({ isActive }) =>
 
 // เนื้อในแถบข้าง ใช้ร่วมกันทั้งจอใหญ่และลิ้นชักบนมือถือ
 function SidebarContent({ user, logout }) {
-  const items = menuFor(user.role);
   return (
     <>
       <div className="flex items-center gap-2 px-3 py-3 text-lg font-semibold">
@@ -26,21 +22,17 @@ function SidebarContent({ user, logout }) {
         อู่ซ่อมรถ
       </div>
       <div className="flex-1 space-y-4 overflow-y-auto">
-        {GROUPS.map((g) => {
-          const inGroup = items.filter((m) => m.group === g);
-          if (inGroup.length === 0) return null;
-          return (
-            <div key={g} className="space-y-1">
-              <div className="px-3 pb-1 text-xs text-muted">{g}</div>
-              {inGroup.map((m) => (
-                <NavLink key={m.to} to={m.to} className={linkClass}>
-                  <Icon name={m.icon} />
-                  <span>{m.label}</span>
-                </NavLink>
-              ))}
-            </div>
-          );
-        })}
+        {GROUPS.map((group) => (
+          <div key={group} className="space-y-1">
+            <div className="px-3 pb-1 text-xs text-muted">{group}</div>
+            {MENU.filter((m) => m.group === group).map((m) => (
+              <NavLink key={m.to} to={m.to} className={linkClass}>
+                <Icon name={m.icon} />
+                <span>{m.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        ))}
       </div>
       <div className="space-y-1 border-t border-line pt-2">
         {user.role === "admin" && (

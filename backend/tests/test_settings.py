@@ -9,10 +9,10 @@ def test_vat_rate_defaults_to_7():
         assert s.get(models.Setting, 1).vat_rate == 7
 
 
-def test_settings(client, h):
-    r = client.put("/api/settings", json={**SETTINGS, "vat_rate": "10"}, headers=h["admin"])
+def test_settings(client, headers):
+    r = client.put("/api/settings", json={**SETTINGS, "vat_rate": "10"}, headers=headers["admin"])
     assert r.status_code == 200
-    assert client.get("/api/settings", headers=h["employee"]).json()["vat_rate"] == "10.00"
-    assert client.put("/api/settings", json=SETTINGS, headers=h["employee"]).status_code == 403
-    assert client.put("/api/settings", json={**SETTINGS, "vat_rate": "-1"}, headers=h["admin"]).status_code == 422
-    assert client.get("/api/settings", headers=h["mechanic"]).json()["shop_name"] == "อู่ช่างเอ"
+    assert client.get("/api/settings", headers=headers["employee"]).json()["vat_rate"] == "10.00"
+    assert client.put("/api/settings", json=SETTINGS, headers=headers["employee"]).status_code == 403
+    assert client.put("/api/settings", json={**SETTINGS, "vat_rate": "-1"}, headers=headers["admin"]).status_code == 422
+    assert client.get("/api/settings", headers=headers["mechanic"]).json()["shop_name"] == "อู่ช่างเอ"

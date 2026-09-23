@@ -17,7 +17,10 @@ export default function Modal({ title, onClose, onSubmit, footer, children }) {
         e.preventDefault();
         onClose();
       }}
-      onClick={(e) => e.target === ref.current && onClose()}
+      onClick={(e) => {
+        // โดนตัว <dialog> เอง = คลิกฉากหลังนอกกล่อง (คลิกเนื้อหาข้างใน target จะเป็นลูกของมัน)
+        if (e.target === ref.current) onClose();
+      }}
     >
       <Body onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
         <header className="flex items-center gap-2 border-b border-line py-2 pr-2 pl-4">

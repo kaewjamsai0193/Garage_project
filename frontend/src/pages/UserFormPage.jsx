@@ -2,13 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useOutletContext, useParams } from "react-router-dom";
 import { api } from "../api";
-import { ROLE_NAME } from "../auth";
+import { ROLE_NAME, useAuth } from "../auth";
 import Field from "../components/Field";
 import Modal from "../components/Modal";
 
 const EMPTY = { username: "", full_name: "", role: "employee", password: "" };
 
-// popup ผู้ใช้ /settings/users/new หรือ /:id: หา user จาก cache ["users"] (ชุดเดียวกับ UsersPage ไม่ยิงซ้ำ) แล้วส่งให้ UserForm
+// popup ผู้ใช้ /settings/users/new หรือ /:id: หา user จาก cache ["users"] ชุดเดียวกับ UserListPage
+// (มีของแล้ววาดทันที แล้ว TanStack Query ดึงใหม่เบื้องหลังหนึ่งครั้ง) แล้วส่งให้ UserForm
 export default function UserFormPage() {
   const { id } = useParams();
   const { close } = useOutletContext();
@@ -21,6 +22,7 @@ export default function UserFormPage() {
 // ฟอร์มผู้ใช้: สร้าง POST /users, แก้ PATCH /users/{id}, ปุ่มเปิด/ปิดใช้งาน
 function UserForm({ initial, close }) {
   const isEdit = !!initial.id;
+  const { user: me, setUser } = useAuth();
   const queryClient = useQueryClient();
   const refreshUsers = () => queryClient.invalidateQueries({ queryKey: ["users"] });
   const { register, handleSubmit } = useForm({ defaultValues: initial });
@@ -33,7 +35,8 @@ function UserForm({ initial, close }) {
             body: { full_name: form.full_name, role: form.role, password: form.password || null },
           })
         : api("/users", { method: "POST", body: form }),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      if (saved.id === me.id) setUser(saved); // แก้บัญชีตัวเอง → ชื่อในแถบข้างเปลี่ยนตาม
       refreshUsers();
       close();
     },

@@ -125,9 +125,9 @@ def test_login_needs_both_fields(client):
     assert client.post("/api/auth/login", json={"username": "admin"}).status_code == 422
 
 
-def test_me_needs_token(client, h):
+def test_me_needs_token(client, headers):
     assert client.get("/api/auth/me").status_code == 401
-    assert client.get("/api/auth/me", headers=h["mechanic"]).json()["username"] == "mechanic"
+    assert client.get("/api/auth/me", headers=headers["mechanic"]).json()["username"] == "mechanic"
 
 
 # --- ensure_admin ---
@@ -164,3 +164,14 @@ def test_ensure_admin_creates_when_only_non_admins_exist(monkeypatch):
         s.commit()
     ensure_admin()
     assert usernames() == ["mech", "owner"]
+
+
+@pytest.mark.parametrize(
+    ("username", "password"), [("", "secret99"), ("  ", "secret99"), ("owner", ""), ("owner", "12345")]
+)
+def test_ensure_admin_refuses_blank_or_short_env(monkeypatch, username, password):
+    monkeypatch.setenv("ADMIN_USERNAME", username)
+    monkeypatch.setenv("ADMIN_PASSWORD", password)
+    with pytest.raises(RuntimeError, match="ADMIN_USERNAME"):
+        ensure_admin()
+    assert usernames() == []  # ไม่มี admin ชื่อว่าง/รหัสว่างหลุดเข้าฐาน

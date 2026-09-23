@@ -31,7 +31,7 @@ function MoreMenu({ items }) {
   );
 }
 
-// Full-page detail screen: back link, title row, content, one sticky action bar (above the phone nav).
+// โครงหน้ารายละเอียด: ลิงก์กลับ + หัวเรื่อง + เนื้อหา + แถบปุ่มหลัก (มือถือติดขอบล่าง จอใหญ่อยู่ท้ายเนื้อหา)
 export default function DetailLayout({ back, backLabel, title, subtitle, badge, menu = [], footer, children }) {
   return (
     <div className="mx-auto max-w-3xl space-y-4">

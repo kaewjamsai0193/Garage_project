@@ -45,7 +45,7 @@ def users():
 
 
 @pytest.fixture
-def h(users):
+def headers(users):
     return {r: {"Authorization": f"Bearer {create_token(u.id)}"} for r, u in users.items()}
 
 

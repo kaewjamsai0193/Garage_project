@@ -1,7 +1,7 @@
 const STATUS = {
   active: ["ใช้งาน", "ok"],
   disabled: ["ปิดใช้งาน", "neutral"],
-  low: ["ต่ำกว่าขั้นต่ำ", "warn"],
+  low: ["ถึงจุดเตือน", "warn"],
   inactive: ["เลิกใช้", "neutral"],
 };
 
@@ -16,6 +16,6 @@ export function productStatus(p) {
 // ป้ายสถานะตาม key ใน STATUS (null = ไม่แสดง)
 export default function StatusBadge({ status }) {
   if (!status) return null;
-  const [text, t] = STATUS[status];
-  return <span className={`badge badge-${t}`}>{text}</span>;
+  const [text, tone] = STATUS[status];
+  return <span className={`badge badge-${tone}`}>{text}</span>;
 }

@@ -8,11 +8,11 @@ import Field from "../components/Field";
 import Icon from "../components/Icon";
 import DetailLayout from "../components/DetailLayout";
 import ReasonDialog from "../components/ReasonDialog";
+import ProductModal from "../components/ProductModal";
 import StatusBadge, { productStatus } from "../components/StatusBadge";
-import { ProductModal } from "./ProductFormPage";
 
-const SOURCE = { adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
-const MOVE = { adjust: "ปรับสต็อก", opening: "ตั้งต้น" };
+const SOURCE_LABEL = { adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
+const MOVE_LABEL = { adjust: "ปรับสต็อก", opening: "ตั้งต้น" };
 const TABS = [
   ["lots", "Lot"],
   ["moves", "สมุดสต็อก"],
@@ -28,7 +28,7 @@ export default function ProductDetailPage() {
   const lots = useQuery({ queryKey: ["products", id, "lots"] });
   const moves = useQuery({ queryKey: ["products", id, "movements"] });
   const [tab, setTab] = useState("lots");
-  const [dialog, setDialog] = useState(null); // null | "edit" | "up" | { downLot }
+  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "up" | "down", lot? }
   const closeDialog = () => setDialog(null);
 
   const p = product.data;
@@ -41,10 +41,10 @@ export default function ProductDetailPage() {
       title={p.name}
       subtitle={p.code}
       badge={<StatusBadge status={productStatus(p)} />}
-      menu={isAdmin ? [{ label: "ปรับเพิ่ม / สต็อกตั้งต้น", onClick: () => setDialog("up") }] : []}
+      menu={isAdmin ? [{ label: "ปรับเพิ่ม / สต็อกตั้งต้น", onClick: () => setDialog({ type: "up" }) }] : []}
       footer={
         isStaff && (
-          <button type="button" className="btn btn-primary w-full" onClick={() => setDialog("edit")}>
+          <button type="button" className="btn btn-primary w-full" onClick={() => setDialog({ type: "edit" })}>
             <Icon name="edit" size={20} />
             แก้สินค้า
           </button>
@@ -81,15 +81,15 @@ export default function ProductDetailPage() {
           lots={lots}
           showCost={isAdmin}
           canAdjust={isStaff}
-          onAdjustDown={(lot) => setDialog({ downLot: lot })}
+          onAdjustDown={(lot) => setDialog({ type: "down", lot })}
         />
       ) : (
         <MovementList moves={moves} />
       )}
 
-      {dialog === "edit" && <ProductModal initial={p} onClose={closeDialog} onSaved={closeDialog} />}
-      {dialog === "up" && <AdjustUpDialog productId={p.id} onClose={closeDialog} />}
-      {dialog?.downLot && <AdjustDownDialog lot={dialog.downLot} onClose={closeDialog} />}
+      {dialog?.type === "edit" && <ProductModal initial={p} onClose={closeDialog} onSaved={closeDialog} />}
+      {dialog?.type === "up" && <AdjustUpDialog productId={p.id} onClose={closeDialog} />}
+      {dialog?.type === "down" && <AdjustDownDialog lot={dialog.lot} onClose={closeDialog} />}
     </DetailLayout>
   );
 }
@@ -120,7 +120,7 @@ function LotList({ lots, showCost, canAdjust, onAdjustDown }) {
           <li key={lot.id} className={`space-y-1 px-4 py-3 ${hasStock ? "" : "text-muted"}`}>
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold">
-                Lot #{lot.id} · {SOURCE[lot.source_type]}
+                Lot #{lot.id} · {SOURCE_LABEL[lot.source_type]}
               </span>
               <span className="text-sm">{formatDate(lot.created_at)}</span>
             </div>
@@ -157,7 +157,7 @@ function MovementList({ moves }) {
           <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
             <div className="min-w-0 text-sm">
               <div className="font-semibold">
-                {MOVE[m.movement_type]} · Lot #{m.lot_id}
+                {MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
               </div>
               <div className="text-muted">
                 {formatDate(m.created_at)} · {m.created_by_name}

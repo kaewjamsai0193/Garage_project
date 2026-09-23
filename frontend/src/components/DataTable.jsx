@@ -7,7 +7,7 @@ export default function DataTable({ items, columns, card, to, empty = "ไม่
   if (items.length === 0)
     return <p className="rounded-xl border border-dashed border-line py-10 text-center text-muted">{empty}</p>;
 
-  // Container query: plain rows until the list is 48rem wide, then a table.
+  // container query: แคบกว่า 48rem เป็นการ์ด กว้างกว่านั้นเป็นตาราง
   return (
     <div className="@container">
       <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-white @3xl:hidden">
@@ -32,7 +32,13 @@ export default function DataTable({ items, columns, card, to, empty = "ไม่
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} onClick={() => navigate(to(item))}>
+              <tr
+                key={item.id}
+                onClick={(e) => {
+                  // คลิกโดน <Link> ในแถว ปล่อยให้ Link ทำเอง (ไม่งั้นไปหน้าเดิมซ้ำ และ Ctrl+คลิกแท็บเดิมก็เปลี่ยนหน้า)
+                  if (!e.target.closest("a")) navigate(to(item));
+                }}
+              >
                 {columns.map((c, i) => (
                   <td key={c.label} className={c.align === "right" ? "num text-right" : ""}>
                     {i === 0 ? (

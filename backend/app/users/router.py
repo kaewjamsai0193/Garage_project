@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
-from app.auth import require_role
+from app.auth import admin
 from app.db import get_db
 from app.models import User
 from app.users import service
 from app.users.schemas import UserCreate, UserOut, UserUpdate
 
 router = APIRouter(prefix="/api", tags=["users"])
-admin = require_role("admin")
 
 
 @router.get("/users", response_model=list[UserOut])

@@ -7,8 +7,8 @@ export const setToken = (token) => localStorage.setItem("token", token);
 export const removeToken = () => localStorage.removeItem("token");
 
 // แปลง error validation 1 รายการจาก FastAPI (422) → ข้อความไทย
-const validationMessage = ({ type, ctx = {} }) =>
-  ({
+function validationMessage({ type, ctx = {} }) {
+  const messages = {
     missing: "กรอกข้อมูลไม่ครบ",
     greater_than: `ต้องมากกว่า ${ctx.gt}`,
     greater_than_equal: `ต้องไม่น้อยกว่า ${ctx.ge}`,
@@ -16,7 +16,9 @@ const validationMessage = ({ type, ctx = {} }) =>
     less_than_equal: `ต้องไม่เกิน ${ctx.le}`,
     string_too_short: "ข้อความสั้นเกินไป",
     string_too_long: "ข้อความยาวเกินไป",
-  })[type] ?? "รูปแบบข้อมูลไม่ถูกต้อง";
+  };
+  return messages[type] ?? "รูปแบบข้อมูลไม่ถูกต้อง";
+}
 
 // แปลง body error จาก backend → ข้อความเดียวไว้โชว์ผู้ใช้
 function toErrorMessage(data) {

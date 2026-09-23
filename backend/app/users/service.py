@@ -9,18 +9,14 @@ from app.models import User
 
 
 def ensure_admin():
-    """ถ้า DB ยังไม่มี admin เลย สร้างจาก env ADMIN_USERNAME/ADMIN_PASSWORD (เรียกจาก lifespan)"""
+    """ถ้า DB ยังไม่มี admin เลย สร้างจาก env ADMIN_USERNAME/ADMIN_PASSWORD (เรียกจาก lifespan), ค่าว่าง/รหัสสั้น → ไม่ยอมเริ่มระบบ"""
     with SessionLocal() as db:
         admin_user = db.scalar(select(User).where(User.role == "admin"))
         if admin_user is None:
-            db.add(
-                User(
-                    username=os.environ["ADMIN_USERNAME"],
-                    full_name="ผู้ดูแลระบบ",
-                    role="admin",
-                    password_hash=hash_password(os.environ["ADMIN_PASSWORD"]),
-                )
-            )
+            username, password = os.environ["ADMIN_USERNAME"].strip(), os.environ["ADMIN_PASSWORD"]
+            if not username or len(password) < 6:
+                raise RuntimeError("ตั้ง ADMIN_USERNAME และ ADMIN_PASSWORD (อย่างน้อย 6 ตัว) ใน .env ก่อนเริ่มระบบ")
+            db.add(User(username=username, full_name="ผู้ดูแลระบบ", role="admin", password_hash=hash_password(password)))
             db.commit()
 
 

@@ -32,8 +32,8 @@ export function AuthProvider({ children }) {
     queryClient.clear();
     setUser(null);
   };
-  return <AuthContext.Provider value={{ user, login, logout }}> {children} </AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, setUser, login, logout }}>{children}</AuthContext.Provider>;
 }
 
-// ดึง { user, login, logout } จาก AuthContext
+// ดึง { user, setUser, login, logout } จาก AuthContext (setUser ใช้ตอน admin แก้บัญชีตัวเอง)
 export const useAuth = () => useContext(AuthContext);

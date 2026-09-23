@@ -1,26 +1,20 @@
 from fastapi import APIRouter, Depends, Response
-from sqlalchemy import or_, select
+from sqlalchemy import select
 
-from app.auth import current_user, require_role
+from app.auth import admin, current_user, staff
 from app.db import get_db, get_or_404
 from app.models import Product, StockLot, StockMovement, User
 from app.schemas import serialize_for_role
-from app.stock import service as svc
+from app.stock import service
 from app.stock.schemas import AdjustDownIn, AdjustUpIn, LotAdminOut, LotOut, MovementOut, ProductIn, ProductOut
 
 router = APIRouter(prefix="/api", tags=["stock"])
-staff = require_role("admin", "employee")
 
 
 @router.get("/products", response_model=list[ProductOut])
-def list_products(q: str = "", active: bool | None = None, db=Depends(get_db), _=Depends(current_user)):
-    """GET /api/products?q=&active=: ค้นรหัส/ชื่อ กรองสถานะ → รายการสินค้าพร้อม qty_on_hand"""
-    stmt = select(Product).order_by(Product.code)
-    if q:
-        stmt = stmt.where(or_(Product.code.ilike(f"%{q}%"), Product.name.ilike(f"%{q}%")))
-    if active is not None:
-        stmt = stmt.where(Product.is_active == active)
-    return db.scalars(stmt).all()
+def list_products(db=Depends(get_db), _=Depends(current_user)):
+    """GET /api/products: สินค้าทุกตัวเรียงตามรหัส พร้อม qty_on_hand (หน้าจอค้น/กรองเอง)"""
+    return db.scalars(select(Product).order_by(Product.code)).all()
 
 
 @router.get("/products/{product_id}", response_model=ProductOut)
@@ -31,14 +25,14 @@ def get_product(product_id: int, db=Depends(get_db), _=Depends(current_user)):
 
 @router.post("/products", response_model=ProductOut, status_code=201)
 def create_product(data: ProductIn, db=Depends(get_db), _=Depends(staff)):
-    """POST /api/products: admin/พนักงาน สร้างสินค้าใหม่ผ่าน svc.save_product"""
-    return svc.save_product(db, None, data)
+    """POST /api/products: admin/พนักงาน สร้างสินค้าใหม่ผ่าน service.save_product"""
+    return service.save_product(db, None, data)
 
 
 @router.put("/products/{product_id}", response_model=ProductOut)
 def update_product(product_id: int, data: ProductIn, db=Depends(get_db), _=Depends(staff)):
-    """PUT /api/products/{id}: admin/พนักงาน แก้สินค้าผ่าน svc.save_product"""
-    return svc.save_product(db, product_id, data)
+    """PUT /api/products/{id}: admin/พนักงาน แก้สินค้าผ่าน service.save_product"""
+    return service.save_product(db, product_id, data)
 
 
 @router.get("/products/{product_id}/lots", response_model=None)
@@ -78,11 +72,11 @@ def list_product_movements(product_id: int, db=Depends(get_db), _=Depends(curren
 @router.post("/stock/adjust-down", status_code=204)
 def adjust_down(data: AdjustDownIn, db=Depends(get_db), user=Depends(staff)):
     """POST /api/stock/adjust-down: admin/พนักงาน ลดของใน Lot พร้อมเหตุผล → 204"""
-    svc.adjust_down(db, data, user)
+    service.adjust_down(db, data, user)
     return Response(status_code=204)
 
 
 @router.post("/stock/adjust-up", response_model=LotAdminOut, status_code=201)
-def adjust_up(data: AdjustUpIn, db=Depends(get_db), user=Depends(require_role("admin"))):
+def adjust_up(data: AdjustUpIn, db=Depends(get_db), user=Depends(admin)):
     """POST /api/stock/adjust-up: admin เพิ่ม Lot ใหม่ (ปรับเพิ่ม/ตั้งต้น) → คืน Lot"""
-    return svc.adjust_up(db, data, user)
+    return service.adjust_up(db, data, user)
