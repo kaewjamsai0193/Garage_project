@@ -1,6 +1,6 @@
 # เฟส 3 — สินค้า + Lot สต็อก
 
-**จบเฟสนี้:** เพิ่ม/แก้สินค้า · ใส่สต็อกตั้งต้น · เห็นของแต่ละรอบเป็น **Lot** แยกต้นทุน · ปรับลด/เพิ่มใน Lot พร้อมเหตุผล (นับผิดแก้ได้) · ดูสมุดสต็อก · พนักงานกับช่าง**ไม่เห็นต้นทุน**
+**จบเฟสนี้:** เพิ่ม/แก้สินค้า · ใส่สต็อกตั้งต้น · เห็นของแต่ละรอบเป็น **Lot** แยกต้นทุน · แจ้งของเสีย/สูญหายพร้อมเหตุผล · ดูสมุดสต็อก · พนักงานกับช่าง**ไม่เห็นต้นทุน**
 
 ตารางใหม่: `products` · `stock_lots` · `stock_movements`
 
@@ -39,13 +39,12 @@ Lot 2  รับ 3  เหลือ 3  ต้นทุน 120  ◄── +3 adju
 ["products", id, "movements"]  → list_product_movements 500 รายการล่าสุด + ชื่อคนทำ
 ```
 
-**ปรับลด / ปรับเพิ่ม ใน Lot เดิม** (admin / พนักงาน)
+**ของเสีย/สูญหาย** (admin / พนักงาน)
 ```
-ปุ่ม "ปรับลด" / "ปรับเพิ่ม" ด้านล่างหน้า → AdjustLotDialog (เลือก Lot + จำนวน + เหตุผล)
-  → POST /api/stock/adjust-down หรือ /api/stock/adjust-lot-up → service.adjust_lot(sign = −1 / +1)
-       lock_shop → อ่าน Lot แบบ with_for_update
-       ลดเกินที่เหลือ? → 409 "(เหลือ 2)" · เพิ่มจนเกินที่รับเข้า? → 409 "(เพิ่มได้อีก 1)"
-       qty_remaining += sign × qty → movement (ติดลบ/บวก) พร้อมเหตุผล → commit
+ปุ่ม "ของเสีย/สูญหาย" ด้านล่างหน้า → WasteDialog (เลือก Lot + จำนวน + เหตุผล)
+  → POST /api/stock/adjust-down → service.adjust_down
+       lock_shop → อ่าน Lot แบบ with_for_update → เกินที่เหลือ? → 409 "(เหลือ 2)"
+       qty_remaining −= qty → movement ติดลบพร้อมเหตุผล → commit
   ← 204 → invalidate ["products"] → คงเหลือ · Lot · สมุด · รายการ โหลดใหม่หมด
 ```
 
@@ -64,8 +63,9 @@ Lot 2  รับ 3  เหลือ 3  ต้นทุน 120  ◄── +3 adju
 | หนึ่งคำสั่ง = หนึ่งทรานแซกชัน | Lot กับ movement เกิดพร้อมกันหรือไม่เกิดเลย |
 | ต้นทุนส่งออกจาก server เฉพาะ admin | ซ่อนแค่บนจอ เปิด DevTools ก็เห็น |
 | มีของเข้าคลังแล้วเปลี่ยนหน่วยไม่ได้ | Lot เก่าเก็บแค่ตัวเลข เปลี่ยน "ขวด" เป็น "ลิตร" = ข้อมูลเก่าผิดหมด |
-| ปรับลด/เพิ่มใน Lot: พนักงานได้ · สต็อกตั้งต้น: admin เท่านั้น | ปรับใน Lot ใช้ต้นทุนเดิมของ Lot · ตั้งต้นคือสร้างของพร้อมต้นทุนที่กรอกเอง ถ้าใครก็ทำได้ กำไรเชื่อไม่ได้ |
-| ปรับเพิ่มใน Lot ได้ไม่เกินที่รับเข้า | ไว้แก้นับผิด ไม่ใช่ทางเสกของ — ของเข้าจริงต้องมี Lot ใหม่พร้อมต้นทุน |
+| ของเสีย/สูญหาย: พนักงานได้ · สต็อกตั้งต้น: admin เท่านั้น | ของเสียหักจาก Lot เดิมใช้ต้นทุนเดิม · ตั้งต้นคือสร้างของพร้อมต้นทุนที่กรอกเอง ถ้าใครก็ทำได้ กำไรเชื่อไม่ได้ |
+| ไม่มีปุ่มปรับเพิ่ม · ของเข้าต้องมีที่มา | ของเข้ามาจากใบรับของ (เฟส 4) หรือสต็อกตั้งต้นเท่านั้น — นับได้เกินให้ admin ลงตั้งต้น |
+| ของเสีย/สูญหาย = ต้นทุนที่หายไป | มูลค่า (จำนวน × ต้นทุน Lot) ต้องหักจากกำไรในแดชบอร์ด (เฟส 9) |
 | เงินเป็น `Decimal` ตลอด · หน้าจอส่งตัวเลขเป็น string | float ปัดเพี้ยน |
 
 ---
@@ -261,7 +261,7 @@ class MovementOut(BaseModel):
     created_at: datetime
 
 
-class AdjustLotIn(In):
+class AdjustDownIn(In):
     lot_id: int
     qty: Decimal = Field(gt=0, decimal_places=3)
     reason: str = Field(min_length=1)
@@ -307,23 +307,16 @@ def save_product(db, product_id, data) -> Product:
     return product
 
 
-def adjust_lot(db, data, user, sign) -> None:
-    """ล็อกร้าน → ปรับ qty_remaining ของ Lot (sign=-1 ลด ห้ามต่ำกว่า 0, sign=1 เพิ่ม ห้ามเกินที่รับเข้า) + บันทึก movement"""
+def adjust_down(db, data, user) -> None:
+    """ของเสีย/สูญหาย: ล็อกร้าน → หัก qty_remaining ของ Lot (ห้ามเกินคงเหลือ) + บันทึก movement ติดลบ"""
     lock_shop(db)
     lot = db.scalar(select(StockLot).where(StockLot.id == data.lot_id).with_for_update())
     if lot is None:
         raise HTTPException(404, "ไม่พบ Lot")
-    if sign < 0 and data.qty > lot.qty_remaining:
-        raise HTTPException(409, f"ปรับลดเกินคงเหลือของ Lot (เหลือ {format_qty(lot.qty_remaining)})")
-    room = lot.qty_received - lot.qty_remaining
-    if sign > 0 and data.qty > room:
-        raise HTTPException(409, f"ปรับเพิ่มเกินจำนวนรับเข้าของ Lot (เพิ่มได้อีก {format_qty(room)})")
-    lot.qty_remaining += sign * data.qty
-    db.add(
-        StockMovement(
-            lot_id=lot.id, qty=sign * data.qty, movement_type="adjust", reason=data.reason, created_by=user.id
-        )
-    )
+    if data.qty > lot.qty_remaining:
+        raise HTTPException(409, f"เกินคงเหลือของ Lot (เหลือ {format_qty(lot.qty_remaining)})")
+    lot.qty_remaining -= data.qty
+    db.add(StockMovement(lot_id=lot.id, qty=-data.qty, movement_type="adjust", reason=data.reason, created_by=user.id))
     db.commit()
 
 
@@ -360,7 +353,7 @@ def add_opening(db, data, user) -> StockLot:
 - `unit_changed` + มี Lot แล้ว → 409 · `lock_shop` บรรทัดแรกกัน `add_opening` สร้าง Lot แรกแทรกระหว่างเช็คกับ commit
 - `db.refresh(product)` เพื่อได้ `qty_on_hand` ล่าสุด
 
-**`adjust_lot`** — ฟังก์ชันเดียวทั้งลดและเพิ่ม (`sign` = −1 / +1) · ล็อกสองชั้น: `lock_shop` (ทั้งอู่) + `with_for_update` (แถว Lot) · อ่าน `qty_remaining` ใต้ล็อกเท่านั้นถึงเชื่อได้ · ลดห้ามต่ำกว่า 0 เพิ่มห้ามเกิน `qty_received` (`room`) · ข้อความ error บอกตัวเลขที่ทำได้
+**`adjust_down`** (ของเสีย/สูญหาย) — ล็อกสองชั้น: `lock_shop` (ทั้งอู่) + `with_for_update` (แถว Lot) · อ่าน `qty_remaining` ใต้ล็อกเท่านั้นถึงเชื่อได้ · ข้อความ error บอกตัวเลขที่เหลือ
 
 **`add_opening`** — `flush()` กลางทางเพื่อได้ `lot.id` ไปใส่ movement (ยังย้อนได้ จนถึง `commit` ครั้งเดียวตอนท้าย) · `cost_total` ปัด 2 ตำแหน่งเพราะเป็นยอดเงิน · Lot เป็น `opening` เสมอ (ค่า `adjustment` ในฐานเหลือไว้ให้ข้อมูลเก่า)
 
@@ -375,7 +368,7 @@ from app.db import get_db, get_or_404
 from app.models import Product, StockLot, StockMovement, User
 from app.schemas import serialize_for_role
 from app.stock import service
-from app.stock.schemas import AdjustLotIn, LotAdminOut, LotOut, MovementOut, OpeningIn, ProductIn, ProductOut
+from app.stock.schemas import AdjustDownIn, LotAdminOut, LotOut, MovementOut, OpeningIn, ProductIn, ProductOut
 
 router = APIRouter(prefix="/api", tags=["stock"])
 
@@ -439,16 +432,9 @@ def list_product_movements(product_id: int, db=Depends(get_db), _=Depends(curren
 
 
 @router.post("/stock/adjust-down", status_code=204)
-def adjust_down(data: AdjustLotIn, db=Depends(get_db), user=Depends(staff)):
-    """POST /api/stock/adjust-down: admin/พนักงาน ลดของใน Lot พร้อมเหตุผล → 204"""
-    service.adjust_lot(db, data, user, -1)
-    return Response(status_code=204)
-
-
-@router.post("/stock/adjust-lot-up", status_code=204)
-def adjust_lot_up(data: AdjustLotIn, db=Depends(get_db), user=Depends(staff)):
-    """POST /api/stock/adjust-lot-up: admin/พนักงาน เติมของคืน Lot เดิม (ไม่เกินที่รับเข้า) พร้อมเหตุผล → 204"""
-    service.adjust_lot(db, data, user, 1)
+def adjust_down(data: AdjustDownIn, db=Depends(get_db), user=Depends(staff)):
+    """POST /api/stock/adjust-down: admin/พนักงาน แจ้งของเสีย/สูญหาย หักจาก Lot พร้อมเหตุผล → 204"""
+    service.adjust_down(db, data, user)
     return Response(status_code=204)
 
 
@@ -461,12 +447,12 @@ def add_opening(data: OpeningIn, db=Depends(get_db), user=Depends(admin)):
 | คำสั่ง | admin | employee | mechanic |
 |---|:---:|:---:|:---:|
 | ดูสินค้า · Lot · สมุดสต็อก | ✅ | ✅ | ✅ (ไม่เห็นต้นทุน) |
-| เพิ่ม/แก้สินค้า · ปรับลด/เพิ่มใน Lot | ✅ | ✅ | – |
+| เพิ่ม/แก้สินค้า · ของเสีย/สูญหาย | ✅ | ✅ | – |
 | สต็อกตั้งต้น | ✅ | – | – |
 
 - `/lots` ใช้ `response_model=None` เพราะ schema ขึ้นกับคนถาม ให้ `serialize_for_role` จัดการ
 - `/movements` `join(User)` เอาชื่อคนทำมาในคำขอเดียว · `limit(500)` สินค้าขายดีมีเป็นหมื่นแถว
-- `adjust-down` / `adjust-lot-up` คืน 204 (หน้าจอ invalidate โหลดใหม่เองอยู่แล้ว) · `opening` คืน Lot ใหม่
+- `adjust-down` คืน 204 (หน้าจอ invalidate โหลดใหม่เองอยู่แล้ว) · `opening` คืน Lot ใหม่
 
 อย่าลืมเติม router ใน `app/main.py` (ดูเฟส 1)
 
@@ -566,22 +552,6 @@ def test_adjustments_and_cost_visibility(client, headers, make_product):
     assert moves[0]["created_by_name"] == "employee"
 
 
-def test_adjust_lot_up_restores_up_to_received(client, headers, make_product):
-    pid = make_product()
-    lot_id = opening(client, headers, pid, "10", "100")
-    down = {"lot_id": lot_id, "qty": "2", "reason": "นับได้ 8"}
-    assert client.post("/api/stock/adjust-down", json=down, headers=headers["employee"]).status_code == 204
-    up = {"lot_id": lot_id, "qty": "1", "reason": "นับผิด เจออีก 1"}
-    assert client.post("/api/stock/adjust-lot-up", json=up, headers=headers["mechanic"]).status_code == 403
-    assert client.post("/api/stock/adjust-lot-up", json=up, headers=headers["employee"]).status_code == 204
-    over = client.post("/api/stock/adjust-lot-up", json={**up, "qty": "2"}, headers=headers["employee"])
-    assert over.status_code == 409
-    [p] = client.get("/api/products", headers=headers["admin"]).json()
-    assert Decimal(p["qty_on_hand"]) == 9
-    moves = client.get(f"/api/products/{pid}/movements", headers=headers["admin"]).json()
-    assert [Decimal(m["qty"]) for m in moves] == [1, -2, 10]
-
-
 def test_lot_qty_cannot_go_negative(users, make_product):
     with SessionLocal() as s:
         s.add(
@@ -604,7 +574,6 @@ def test_lot_qty_cannot_go_negative(users, make_product):
 | `product_create_list_and_unit_lock` | รหัสซ้ำ 409 (ทั้งตอนสร้างและตอนแก้เป็นรหัสคนอื่น) · ช่างสร้างไม่ได้ · ไม่มี 404 · เปลี่ยนหน่วยหลังมีของไม่ได้ |
 | `lots_are_separate_and_oldest_first` | Lot แยกต้นทุนจริง และเรียงเก่าก่อน |
 | `adjustments_and_cost_visibility` | สิทธิ์ครบทุกบทบาท · **ต้นทุนไม่หลุดถึงพนักงาน** · สมุดบันทึกชื่อคนทำ |
-| `adjust_lot_up_restores_up_to_received` | ปรับเพิ่มคืน Lot ได้ · ช่างทำไม่ได้ · เกินที่รับเข้า 409 · สมุดเรียง +1, −2, +10 |
 | `lot_qty_cannot_go_negative` | ฐานกันของติดลบเองได้ |
 
 ---
@@ -1018,13 +987,14 @@ import ProductModal from "../components/ProductModal";
 import StatusBadge, { productStatus } from "../components/StatusBadge";
 
 const SOURCE_LABEL = { adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
-const MOVE_LABEL = { adjust: "ปรับสต็อก", opening: "ตั้งต้น" };
+// adjust ค่าบวก = ปรับเพิ่มแบบเก่า (ก่อนเหลือแค่ปุ่มของเสีย) ยังมีในฐาน
+const MOVE_LABEL = { adjust: "ของเสีย/สูญหาย", opening: "ตั้งต้น" };
 const TABS = [
   ["lots", "Lot"],
   ["moves", "สมุดสต็อก"],
 ];
 
-// หน้าสินค้า /stock/:id: ดึงสินค้า + Lot + สมุดสต็อก, เปิด popup แก้สินค้า / ปรับลด/เพิ่ม (ปุ่มล่าง) / สต็อกตั้งต้น (ปุ่มบน)
+// หน้าสินค้า /stock/:id: ดึงสินค้า + Lot + สมุดสต็อก, เปิด popup แก้สินค้า / ของเสีย/สูญหาย (ปุ่มล่าง) / สต็อกตั้งต้น (ปุ่มบน)
 export default function ProductDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -1034,11 +1004,9 @@ export default function ProductDetailPage() {
   const lots = useQuery({ queryKey: ["products", id, "lots"] });
   const moves = useQuery({ queryKey: ["products", id, "movements"] });
   const [tab, setTab] = useState("lots");
-  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "opening" | "lot", sign? }
+  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "opening" | "waste" }
   const closeDialog = () => setDialog(null);
-  // Lot ที่ปรับลดได้ (ยังมีของ) / ปรับเพิ่มได้ (เหลือน้อยกว่าที่รับเข้า)
-  const downLots = lots.data?.filter((l) => Number(l.qty_remaining) > 0) ?? [];
-  const upLots = lots.data?.filter((l) => Number(l.qty_remaining) < Number(l.qty_received)) ?? [];
+  const stockedLots = lots.data?.filter((l) => Number(l.qty_remaining) > 0) ?? []; // Lot ที่ยังมีของให้แจ้งเสีย
 
   const p = product.data;
   if (!p) return <DetailLayout back="/stock" backLabel="สต็อก" title={product.error?.message || "กำลังโหลด…"} />;
@@ -1060,26 +1028,17 @@ export default function ProductDetailPage() {
       }
       footer={
         isStaff && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <button
               type="button"
               className="btn btn-secondary flex-1"
-              disabled={!downLots.length}
-              onClick={() => setDialog({ type: "lot", sign: -1 })}
+              disabled={!stockedLots.length}
+              onClick={() => setDialog({ type: "waste" })}
             >
               <Icon name="minus" size={20} />
-              ปรับลด
+              ของเสีย/สูญหาย
             </button>
-            <button
-              type="button"
-              className="btn btn-secondary flex-1"
-              disabled={!upLots.length}
-              onClick={() => setDialog({ type: "lot", sign: 1 })}
-            >
-              <Icon name="plus" size={20} />
-              ปรับเพิ่ม
-            </button>
-            <button type="button" className="btn btn-primary w-full" onClick={() => setDialog({ type: "edit" })}>
+            <button type="button" className="btn btn-primary flex-1" onClick={() => setDialog({ type: "edit" })}>
               <Icon name="edit" size={20} />
               แก้สินค้า
             </button>
@@ -1116,9 +1075,7 @@ export default function ProductDetailPage() {
 
       {dialog?.type === "edit" && <ProductModal initial={p} onClose={closeDialog} onSaved={closeDialog} />}
       {dialog?.type === "opening" && <OpeningDialog productId={p.id} onClose={closeDialog} />}
-      {dialog?.type === "lot" && (
-        <AdjustLotDialog lots={dialog.sign < 0 ? downLots : upLots} sign={dialog.sign} onClose={closeDialog} />
-      )}
+      {dialog?.type === "waste" && <WasteDialog lots={stockedLots} onClose={closeDialog} />}
     </DetailLayout>
   );
 }
@@ -1180,7 +1137,7 @@ function MovementList({ moves }) {
           <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
             <div className="min-w-0 text-sm">
               <div className="font-semibold">
-                {MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
+                {m.movement_type === "adjust" && qty > 0 ? "ปรับเพิ่ม" : MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
               </div>
               <div className="text-muted">
                 {formatDate(m.created_at)} · {m.created_by_name}
@@ -1210,39 +1167,38 @@ function useAdjustStock(path, onDone) {
   });
 }
 
-// popup ปรับลด/เพิ่มใน Lot เดิม (เลือก Lot เอง ค่าเริ่มเป็น Lot เก่าสุด): POST /stock/adjust-down หรือ /stock/adjust-lot-up
-function AdjustLotDialog({ lots, sign, onClose }) {
+// popup ของเสีย/สูญหาย (เลือก Lot ค่าเริ่ม Lot เก่าสุด): POST /stock/adjust-down { lot_id, qty, reason }
+function WasteDialog({ lots, onClose }) {
   const { register, handleSubmit, watch } = useForm({
     defaultValues: { lot_id: String(lots[0].id), qty: "", reason: "" },
   });
-  const adjust = useAdjustStock(sign < 0 ? "/stock/adjust-down" : "/stock/adjust-lot-up", onClose);
-  const room = (l) => (sign < 0 ? Number(l.qty_remaining) : Number(l.qty_received) - Number(l.qty_remaining));
+  const waste = useAdjustStock("/stock/adjust-down", onClose);
   const lot = lots.find((l) => String(l.id) === watch("lot_id"));
   return (
     <ReasonDialog
-      title={sign < 0 ? "ปรับลด" : "ปรับเพิ่ม"}
+      title="ของเสีย/สูญหาย"
       onClose={onClose}
       register={register}
-      mutation={adjust}
-      onSubmit={handleSubmit((form) => adjust.mutate({ ...form, lot_id: Number(form.lot_id) }))}
+      mutation={waste}
+      onSubmit={handleSubmit((form) => waste.mutate({ ...form, lot_id: Number(form.lot_id) }))}
     >
       <label className="block">
         <span className="label">Lot</span>
         <select className="input" {...register("lot_id")}>
           {lots.map((l) => (
             <option key={l.id} value={l.id}>
-              Lot #{l.id} · {formatDate(l.created_at)} · เหลือ {formatQty(l.qty_remaining)}/{formatQty(l.qty_received)}
+              Lot #{l.id} · {formatDate(l.created_at)} · เหลือ {formatQty(l.qty_remaining)}
             </option>
           ))}
         </select>
       </label>
       <Field
-        label={`${sign < 0 ? "จำนวนที่ลด (ลดได้" : "จำนวนที่เพิ่ม (เพิ่มได้"} ${formatQty(room(lot))})`}
+        label={`จำนวน (เหลือ ${formatQty(lot.qty_remaining)})`}
         type="number"
         inputMode="decimal"
         step="0.001"
         min="0.001"
-        max={room(lot)}
+        max={lot.qty_remaining}
         required
         {...register("qty")}
       />
@@ -1278,10 +1234,11 @@ function OpeningDialog({ productId, onClose }) {
 ```
 
 - ยิง 3 กุญแจ ทุกตัวขึ้นต้น `"products"` → invalidate ครั้งเดียวโหลดใหม่หมด
-- `dialog` = ป๊อปอัพที่เปิดอยู่ `{ type: "edit" | "opening" | "lot", sign? }` · เปิดได้ทีละอัน · ปิด = `setDialog(null)`
-- ปุ่มปรับลด/เพิ่มอยู่ด้านล่างรวมกับแก้สินค้า · `downLots` (ยังมีของ) / `upLots` (เหลือน้อยกว่าที่รับเข้า) เป็นตัวเลือกใน dropdown ค่าเริ่ม Lot เก่าสุด · ไม่มี Lot ที่ทำได้ → ปุ่มจาง
+- `dialog` = ป๊อปอัพที่เปิดอยู่ `{ type: "edit" | "opening" | "waste" }` · เปิดได้ทีละอัน · ปิด = `setDialog(null)`
+- ปุ่ม "ของเสีย/สูญหาย" อยู่ด้านล่างคู่กับแก้สินค้า · `stockedLots` (Lot ที่ยังมีของ) เป็นตัวเลือกใน dropdown ค่าเริ่ม Lot เก่าสุด · ไม่มีของเลย → ปุ่มจาง
+- สมุด: `adjust` ค่าลบ = "ของเสีย/สูญหาย" · ค่าบวกเป็นข้อมูลปรับเพิ่มแบบเก่าที่ยังค้างในฐาน แสดง "ปรับเพิ่ม"
 - ป๊อปอัพปรับสต็อกใช้ **state** ไม่ใช้ route (เป็นคำสั่งย่อยในหน้า ไม่ต้องมี URL) ต่างจากฟอร์มเพิ่ม/แก้
-- `useAdjustStock` ตัวเดียวใช้ทั้งปรับลด/เพิ่ม/ตั้งต้น · `AdjustLotDialog` ตัวเดียวทั้งลดและเพิ่ม (`sign`) · Lot ที่หมดแล้วสีจาง · ตัวเลขติดลบในสมุดสีแดง
+- `useAdjustStock` ตัวเดียวใช้ทั้งของเสียและตั้งต้น · Lot ที่หมดแล้วสีจาง · ตัวเลขติดลบในสมุดสีแดง
 
 ## เมนูและ route
 
@@ -1310,8 +1267,8 @@ function OpeningDialog({ productId, onClose }) {
 
 - pytest เขียว · `npm run build` ผ่าน
 - เพิ่มสินค้า → ไปหน้าสินค้าเอง → ใส่สต็อกตั้งต้นสองรอบต้นทุนต่างกัน → เห็นสอง Lot เรียงเก่าก่อน
-- ปรับลดเกินที่เหลือ → ขึ้นข้อความพร้อมตัวเลข · ไม่กรอกเหตุผล → กดไม่ผ่าน
-- ปรับลด 2 แล้วปรับเพิ่ม 1 ใน Lot เดิม → คงเหลือถูก · ปรับเพิ่มเกินที่รับเข้า → ขึ้นข้อความ "เพิ่มได้อีก …"
+- ของเสีย/สูญหายเกินที่เหลือ → ขึ้นข้อความพร้อมตัวเลข · ไม่กรอกเหตุผล → กดไม่ผ่าน
+- มีหลาย Lot → แจ้งของเสียจาก Lot ที่เลือก คงเหลือลดถูก · สมุดขึ้น "ของเสีย/สูญหาย" ตัวแดง
 - ตั้งขั้นต่ำสูงกว่าของที่มี → ป้าย "ถึงจุดเตือน" · แท็บ "ถึงจุดเตือน" เจอ · ตั้งกลับเป็น 0 → ป้ายหาย
 - มีของแล้วลองเปลี่ยนหน่วย → 409
 - ล็อกอินเป็นพนักงาน → ไม่เห็นต้นทุน · DevTools → Network → `/lots` ต้องไม่มี `unit_cost`

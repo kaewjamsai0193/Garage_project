@@ -12,13 +12,14 @@ import ProductModal from "../components/ProductModal";
 import StatusBadge, { productStatus } from "../components/StatusBadge";
 
 const SOURCE_LABEL = { adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
-const MOVE_LABEL = { adjust: "ปรับสต็อก", opening: "ตั้งต้น" };
+// adjust ค่าบวก = ปรับเพิ่มแบบเก่า (ก่อนเหลือแค่ปุ่มของเสีย) ยังมีในฐาน
+const MOVE_LABEL = { adjust: "ของเสีย/สูญหาย", opening: "ตั้งต้น" };
 const TABS = [
   ["lots", "Lot"],
   ["moves", "สมุดสต็อก"],
 ];
 
-// หน้าสินค้า /stock/:id: ดึงสินค้า + Lot + สมุดสต็อก, เปิด popup แก้สินค้า / ปรับลด/เพิ่ม (ปุ่มล่าง) / สต็อกตั้งต้น (ปุ่มบน)
+// หน้าสินค้า /stock/:id: ดึงสินค้า + Lot + สมุดสต็อก, เปิด popup แก้สินค้า / ของเสีย/สูญหาย (ปุ่มล่าง) / สต็อกตั้งต้น (ปุ่มบน)
 export default function ProductDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -28,11 +29,9 @@ export default function ProductDetailPage() {
   const lots = useQuery({ queryKey: ["products", id, "lots"] });
   const moves = useQuery({ queryKey: ["products", id, "movements"] });
   const [tab, setTab] = useState("lots");
-  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "opening" | "lot", sign? }
+  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "opening" | "waste" }
   const closeDialog = () => setDialog(null);
-  // Lot ที่ปรับลดได้ (ยังมีของ) / ปรับเพิ่มได้ (เหลือน้อยกว่าที่รับเข้า)
-  const downLots = lots.data?.filter((l) => Number(l.qty_remaining) > 0) ?? [];
-  const upLots = lots.data?.filter((l) => Number(l.qty_remaining) < Number(l.qty_received)) ?? [];
+  const stockedLots = lots.data?.filter((l) => Number(l.qty_remaining) > 0) ?? []; // Lot ที่ยังมีของให้แจ้งเสีย
 
   const p = product.data;
   if (!p) return <DetailLayout back="/stock" backLabel="สต็อก" title={product.error?.message || "กำลังโหลด…"} />;
@@ -54,26 +53,17 @@ export default function ProductDetailPage() {
       }
       footer={
         isStaff && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <button
               type="button"
               className="btn btn-secondary flex-1"
-              disabled={!downLots.length}
-              onClick={() => setDialog({ type: "lot", sign: -1 })}
+              disabled={!stockedLots.length}
+              onClick={() => setDialog({ type: "waste" })}
             >
               <Icon name="minus" size={20} />
-              ปรับลด
+              ของเสีย/สูญหาย
             </button>
-            <button
-              type="button"
-              className="btn btn-secondary flex-1"
-              disabled={!upLots.length}
-              onClick={() => setDialog({ type: "lot", sign: 1 })}
-            >
-              <Icon name="plus" size={20} />
-              ปรับเพิ่ม
-            </button>
-            <button type="button" className="btn btn-primary w-full" onClick={() => setDialog({ type: "edit" })}>
+            <button type="button" className="btn btn-primary flex-1" onClick={() => setDialog({ type: "edit" })}>
               <Icon name="edit" size={20} />
               แก้สินค้า
             </button>
@@ -110,9 +100,7 @@ export default function ProductDetailPage() {
 
       {dialog?.type === "edit" && <ProductModal initial={p} onClose={closeDialog} onSaved={closeDialog} />}
       {dialog?.type === "opening" && <OpeningDialog productId={p.id} onClose={closeDialog} />}
-      {dialog?.type === "lot" && (
-        <AdjustLotDialog lots={dialog.sign < 0 ? downLots : upLots} sign={dialog.sign} onClose={closeDialog} />
-      )}
+      {dialog?.type === "waste" && <WasteDialog lots={stockedLots} onClose={closeDialog} />}
     </DetailLayout>
   );
 }
@@ -174,7 +162,7 @@ function MovementList({ moves }) {
           <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
             <div className="min-w-0 text-sm">
               <div className="font-semibold">
-                {MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
+                {m.movement_type === "adjust" && qty > 0 ? "ปรับเพิ่ม" : MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
               </div>
               <div className="text-muted">
                 {formatDate(m.created_at)} · {m.created_by_name}
@@ -204,39 +192,38 @@ function useAdjustStock(path, onDone) {
   });
 }
 
-// popup ปรับลด/เพิ่มใน Lot เดิม (เลือก Lot เอง ค่าเริ่มเป็น Lot เก่าสุด): POST /stock/adjust-down หรือ /stock/adjust-lot-up
-function AdjustLotDialog({ lots, sign, onClose }) {
+// popup ของเสีย/สูญหาย (เลือก Lot ค่าเริ่ม Lot เก่าสุด): POST /stock/adjust-down { lot_id, qty, reason }
+function WasteDialog({ lots, onClose }) {
   const { register, handleSubmit, watch } = useForm({
     defaultValues: { lot_id: String(lots[0].id), qty: "", reason: "" },
   });
-  const adjust = useAdjustStock(sign < 0 ? "/stock/adjust-down" : "/stock/adjust-lot-up", onClose);
-  const room = (l) => (sign < 0 ? Number(l.qty_remaining) : Number(l.qty_received) - Number(l.qty_remaining));
+  const waste = useAdjustStock("/stock/adjust-down", onClose);
   const lot = lots.find((l) => String(l.id) === watch("lot_id"));
   return (
     <ReasonDialog
-      title={sign < 0 ? "ปรับลด" : "ปรับเพิ่ม"}
+      title="ของเสีย/สูญหาย"
       onClose={onClose}
       register={register}
-      mutation={adjust}
-      onSubmit={handleSubmit((form) => adjust.mutate({ ...form, lot_id: Number(form.lot_id) }))}
+      mutation={waste}
+      onSubmit={handleSubmit((form) => waste.mutate({ ...form, lot_id: Number(form.lot_id) }))}
     >
       <label className="block">
         <span className="label">Lot</span>
         <select className="input" {...register("lot_id")}>
           {lots.map((l) => (
             <option key={l.id} value={l.id}>
-              Lot #{l.id} · {formatDate(l.created_at)} · เหลือ {formatQty(l.qty_remaining)}/{formatQty(l.qty_received)}
+              Lot #{l.id} · {formatDate(l.created_at)} · เหลือ {formatQty(l.qty_remaining)}
             </option>
           ))}
         </select>
       </label>
       <Field
-        label={`${sign < 0 ? "จำนวนที่ลด (ลดได้" : "จำนวนที่เพิ่ม (เพิ่มได้"} ${formatQty(room(lot))})`}
+        label={`จำนวน (เหลือ ${formatQty(lot.qty_remaining)})`}
         type="number"
         inputMode="decimal"
         step="0.001"
         min="0.001"
-        max={room(lot)}
+        max={lot.qty_remaining}
         required
         {...register("qty")}
       />

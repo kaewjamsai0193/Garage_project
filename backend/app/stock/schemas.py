@@ -44,7 +44,7 @@ class MovementOut(BaseModel):
     created_at: datetime
 
 
-class AdjustLotIn(In):
+class AdjustDownIn(In):
     lot_id: int
     qty: Decimal = Field(gt=0, decimal_places=3)
     reason: str = Field(min_length=1)

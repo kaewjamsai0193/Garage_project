@@ -74,22 +74,6 @@ def test_adjustments_and_cost_visibility(client, headers, make_product):
     assert moves[0]["created_by_name"] == "employee"
 
 
-def test_adjust_lot_up_restores_up_to_received(client, headers, make_product):
-    pid = make_product()
-    lot_id = opening(client, headers, pid, "10", "100")
-    down = {"lot_id": lot_id, "qty": "2", "reason": "นับได้ 8"}
-    assert client.post("/api/stock/adjust-down", json=down, headers=headers["employee"]).status_code == 204
-    up = {"lot_id": lot_id, "qty": "1", "reason": "นับผิด เจออีก 1"}
-    assert client.post("/api/stock/adjust-lot-up", json=up, headers=headers["mechanic"]).status_code == 403
-    assert client.post("/api/stock/adjust-lot-up", json=up, headers=headers["employee"]).status_code == 204
-    over = client.post("/api/stock/adjust-lot-up", json={**up, "qty": "2"}, headers=headers["employee"])
-    assert over.status_code == 409
-    [p] = client.get("/api/products", headers=headers["admin"]).json()
-    assert Decimal(p["qty_on_hand"]) == 9
-    moves = client.get(f"/api/products/{pid}/movements", headers=headers["admin"]).json()
-    assert [Decimal(m["qty"]) for m in moves] == [1, -2, 10]
-
-
 def test_lot_qty_cannot_go_negative(users, make_product):
     with SessionLocal() as s:
         s.add(

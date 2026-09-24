@@ -24,23 +24,16 @@ def save_product(db, product_id, data) -> Product:
     return product
 
 
-def adjust_lot(db, data, user, sign) -> None:
-    """ล็อกร้าน → ปรับ qty_remaining ของ Lot (sign=-1 ลด ห้ามต่ำกว่า 0, sign=1 เพิ่ม ห้ามเกินที่รับเข้า) + บันทึก movement"""
+def adjust_down(db, data, user) -> None:
+    """ของเสีย/สูญหาย: ล็อกร้าน → หัก qty_remaining ของ Lot (ห้ามเกินคงเหลือ) + บันทึก movement ติดลบ"""
     lock_shop(db)
     lot = db.scalar(select(StockLot).where(StockLot.id == data.lot_id).with_for_update())
     if lot is None:
         raise HTTPException(404, "ไม่พบ Lot")
-    if sign < 0 and data.qty > lot.qty_remaining:
-        raise HTTPException(409, f"ปรับลดเกินคงเหลือของ Lot (เหลือ {format_qty(lot.qty_remaining)})")
-    room = lot.qty_received - lot.qty_remaining
-    if sign > 0 and data.qty > room:
-        raise HTTPException(409, f"ปรับเพิ่มเกินจำนวนรับเข้าของ Lot (เพิ่มได้อีก {format_qty(room)})")
-    lot.qty_remaining += sign * data.qty
-    db.add(
-        StockMovement(
-            lot_id=lot.id, qty=sign * data.qty, movement_type="adjust", reason=data.reason, created_by=user.id
-        )
-    )
+    if data.qty > lot.qty_remaining:
+        raise HTTPException(409, f"เกินคงเหลือของ Lot (เหลือ {format_qty(lot.qty_remaining)})")
+    lot.qty_remaining -= data.qty
+    db.add(StockMovement(lot_id=lot.id, qty=-data.qty, movement_type="adjust", reason=data.reason, created_by=user.id))
     db.commit()
 
 
