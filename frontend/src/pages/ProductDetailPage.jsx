@@ -18,7 +18,7 @@ const TABS = [
   ["moves", "สมุดสต็อก"],
 ];
 
-// หน้าสินค้า /stock/:id: ดึงสินค้า + Lot + สมุดสต็อก, เปิด popup แก้สินค้า / ปรับลด / ปรับเพิ่ม
+// หน้าสินค้า /stock/:id: ดึงสินค้า + Lot + สมุดสต็อก, เปิด popup แก้สินค้า / ปรับลด/เพิ่ม (ปุ่มล่าง) / สต็อกตั้งต้น (ปุ่มบน)
 export default function ProductDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -28,8 +28,11 @@ export default function ProductDetailPage() {
   const lots = useQuery({ queryKey: ["products", id, "lots"] });
   const moves = useQuery({ queryKey: ["products", id, "movements"] });
   const [tab, setTab] = useState("lots");
-  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "up" | "down", lot? }
+  const [dialog, setDialog] = useState(null); // ป๊อปอัพที่เปิดอยู่: null หรือ { type: "edit" | "opening" | "lot", sign? }
   const closeDialog = () => setDialog(null);
+  // Lot ที่ปรับลดได้ (ยังมีของ) / ปรับเพิ่มได้ (เหลือน้อยกว่าที่รับเข้า)
+  const downLots = lots.data?.filter((l) => Number(l.qty_remaining) > 0) ?? [];
+  const upLots = lots.data?.filter((l) => Number(l.qty_remaining) < Number(l.qty_received)) ?? [];
 
   const p = product.data;
   if (!p) return <DetailLayout back="/stock" backLabel="สต็อก" title={product.error?.message || "กำลังโหลด…"} />;
@@ -41,13 +44,40 @@ export default function ProductDetailPage() {
       title={p.name}
       subtitle={p.code}
       badge={<StatusBadge status={productStatus(p)} />}
-      menu={isAdmin ? [{ label: "ปรับเพิ่ม / สต็อกตั้งต้น", onClick: () => setDialog({ type: "up" }) }] : []}
+      action={
+        isAdmin && (
+          <button type="button" className="btn btn-secondary" onClick={() => setDialog({ type: "opening" })}>
+            <Icon name="plus" size={20} />
+            สต็อกตั้งต้น
+          </button>
+        )
+      }
       footer={
         isStaff && (
-          <button type="button" className="btn btn-primary w-full" onClick={() => setDialog({ type: "edit" })}>
-            <Icon name="edit" size={20} />
-            แก้สินค้า
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary flex-1"
+              disabled={!downLots.length}
+              onClick={() => setDialog({ type: "lot", sign: -1 })}
+            >
+              <Icon name="minus" size={20} />
+              ปรับลด
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary flex-1"
+              disabled={!upLots.length}
+              onClick={() => setDialog({ type: "lot", sign: 1 })}
+            >
+              <Icon name="plus" size={20} />
+              ปรับเพิ่ม
+            </button>
+            <button type="button" className="btn btn-primary w-full" onClick={() => setDialog({ type: "edit" })}>
+              <Icon name="edit" size={20} />
+              แก้สินค้า
+            </button>
+          </div>
         )
       }
     >
@@ -76,20 +106,13 @@ export default function ProductDetailPage() {
           </button>
         ))}
       </div>
-      {tab === "lots" ? (
-        <LotList
-          lots={lots}
-          showCost={isAdmin}
-          canAdjust={isStaff}
-          onAdjustDown={(lot) => setDialog({ type: "down", lot })}
-        />
-      ) : (
-        <MovementList moves={moves} />
-      )}
+      {tab === "lots" ? <LotList lots={lots} showCost={isAdmin} /> : <MovementList moves={moves} />}
 
       {dialog?.type === "edit" && <ProductModal initial={p} onClose={closeDialog} onSaved={closeDialog} />}
-      {dialog?.type === "up" && <AdjustUpDialog productId={p.id} onClose={closeDialog} />}
-      {dialog?.type === "down" && <AdjustDownDialog lot={dialog.lot} onClose={closeDialog} />}
+      {dialog?.type === "opening" && <OpeningDialog productId={p.id} onClose={closeDialog} />}
+      {dialog?.type === "lot" && (
+        <AdjustLotDialog lots={dialog.sign < 0 ? downLots : upLots} sign={dialog.sign} onClose={closeDialog} />
+      )}
     </DetailLayout>
   );
 }
@@ -104,8 +127,8 @@ function Fact({ label, value }) {
   );
 }
 
-// รายการ Lot เก่า→ใหม่: ต้นทุนโชว์เฉพาะ admin, Lot ที่ยังเหลือของมีปุ่มปรับลด
-function LotList({ lots, showCost, canAdjust, onAdjustDown }) {
+// รายการ Lot เก่า→ใหม่: ต้นทุนโชว์เฉพาะ admin, Lot ที่ของหมดเป็นสีจาง
+function LotList({ lots, showCost }) {
   return (
     <ul className="divide-y divide-line rounded-xl border border-line">
       {lots.error && (
@@ -128,12 +151,6 @@ function LotList({ lots, showCost, canAdjust, onAdjustDown }) {
               รับเข้า {formatQty(lot.qty_received)} · <b>เหลือ {formatQty(lot.qty_remaining)}</b>
             </div>
             {showCost && <div className="num text-sm">ต้นทุน/หน่วย {formatUnitPrice(lot.unit_cost)}</div>}
-            {canAdjust && hasStock && (
-              <button type="button" className="btn btn-secondary" onClick={() => onAdjustDown(lot)}>
-                <Icon name="minus" size={20} />
-                ปรับลด
-              </button>
-            )}
           </li>
         );
       })}
@@ -187,24 +204,39 @@ function useAdjustStock(path, onDone) {
   });
 }
 
-// popup ปรับลด Lot: POST /stock/adjust-down { lot_id, qty, reason }
-function AdjustDownDialog({ lot, onClose }) {
-  const { register, handleSubmit } = useForm({ defaultValues: { qty: "", reason: "" } });
-  const adjustDown = useAdjustStock("/stock/adjust-down", onClose);
+// popup ปรับลด/เพิ่มใน Lot เดิม (เลือก Lot เอง ค่าเริ่มเป็น Lot เก่าสุด): POST /stock/adjust-down หรือ /stock/adjust-lot-up
+function AdjustLotDialog({ lots, sign, onClose }) {
+  const { register, handleSubmit, watch } = useForm({
+    defaultValues: { lot_id: String(lots[0].id), qty: "", reason: "" },
+  });
+  const adjust = useAdjustStock(sign < 0 ? "/stock/adjust-down" : "/stock/adjust-lot-up", onClose);
+  const room = (l) => (sign < 0 ? Number(l.qty_remaining) : Number(l.qty_received) - Number(l.qty_remaining));
+  const lot = lots.find((l) => String(l.id) === watch("lot_id"));
   return (
     <ReasonDialog
-      title={`ปรับลด Lot #${lot.id}`}
+      title={sign < 0 ? "ปรับลด" : "ปรับเพิ่ม"}
       onClose={onClose}
       register={register}
-      mutation={adjustDown}
-      onSubmit={handleSubmit((form) => adjustDown.mutate({ ...form, lot_id: lot.id }))}
+      mutation={adjust}
+      onSubmit={handleSubmit((form) => adjust.mutate({ ...form, lot_id: Number(form.lot_id) }))}
     >
+      <label className="block">
+        <span className="label">Lot</span>
+        <select className="input" {...register("lot_id")}>
+          {lots.map((l) => (
+            <option key={l.id} value={l.id}>
+              Lot #{l.id} · {formatDate(l.created_at)} · เหลือ {formatQty(l.qty_remaining)}/{formatQty(l.qty_received)}
+            </option>
+          ))}
+        </select>
+      </label>
       <Field
-        label={`จำนวนที่ลด (เหลือ ${formatQty(lot.qty_remaining)})`}
+        label={`${sign < 0 ? "จำนวนที่ลด (ลดได้" : "จำนวนที่เพิ่ม (เพิ่มได้"} ${formatQty(room(lot))})`}
         type="number"
         inputMode="decimal"
         step="0.001"
         min="0.001"
+        max={room(lot)}
         required
         {...register("qty")}
       />
@@ -212,27 +244,18 @@ function AdjustDownDialog({ lot, onClose }) {
   );
 }
 
-// popup ปรับเพิ่ม/สต็อกตั้งต้น (admin): POST /stock/adjust-up สร้าง Lot ใหม่
-function AdjustUpDialog({ productId, onClose }) {
-  const { register, handleSubmit } = useForm({
-    defaultValues: { source_type: "adjustment", qty: "", unit_cost: "", reason: "" },
-  });
-  const adjustUp = useAdjustStock("/stock/adjust-up", onClose);
+// popup สต็อกตั้งต้น (admin): POST /stock/opening สร้าง Lot ใหม่ (ของเข้าปกติมาจากใบรับของ)
+function OpeningDialog({ productId, onClose }) {
+  const { register, handleSubmit } = useForm({ defaultValues: { qty: "", unit_cost: "", reason: "" } });
+  const opening = useAdjustStock("/stock/opening", onClose);
   return (
     <ReasonDialog
-      title="ปรับเพิ่ม / สต็อกตั้งต้น"
+      title="สต็อกตั้งต้น"
       onClose={onClose}
       register={register}
-      mutation={adjustUp}
-      onSubmit={handleSubmit((form) => adjustUp.mutate({ ...form, product_id: productId }))}
+      mutation={opening}
+      onSubmit={handleSubmit((form) => opening.mutate({ ...form, product_id: productId }))}
     >
-      <label className="block">
-        <span className="label">ประเภท</span>
-        <select className="input" {...register("source_type")}>
-          <option value="adjustment">ปรับเพิ่ม</option>
-          <option value="opening">สต็อกตั้งต้น</option>
-        </select>
-      </label>
       <Field label="จำนวน" type="number" inputMode="decimal" step="0.001" min="0.001" required {...register("qty")} />
       <Field
         label="ต้นทุนต่อหน่วย (ก่อน VAT)"

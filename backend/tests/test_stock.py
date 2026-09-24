@@ -11,9 +11,9 @@ PRODUCT = {"code": "OIL-1", "name": "น้ำมันเครื่อง", "
 
 def opening(client, headers, pid, qty, cost):
     r = client.post(
-        "/api/stock/adjust-up",
+        "/api/stock/opening",
         headers=headers["admin"],
-        json={"product_id": pid, "qty": qty, "unit_cost": cost, "reason": "ตั้งต้น", "source_type": "opening"},
+        json={"product_id": pid, "qty": qty, "unit_cost": cost, "reason": "ตั้งต้น"},
     )
     assert r.status_code == 201, r.text
     return r.json()["id"]
@@ -56,8 +56,8 @@ def test_lots_are_separate_and_oldest_first(client, headers, make_product):
 def test_adjustments_and_cost_visibility(client, headers, make_product):
     pid = make_product()
     lot_id = opening(client, headers, pid, "2", "100")
-    up = {"product_id": pid, "qty": "1", "unit_cost": "1", "reason": "นับเจอ", "source_type": "adjustment"}
-    assert client.post("/api/stock/adjust-up", json=up, headers=headers["employee"]).status_code == 403
+    up = {"product_id": pid, "qty": "1", "unit_cost": "1", "reason": "นับเจอ"}
+    assert client.post("/api/stock/opening", json=up, headers=headers["employee"]).status_code == 403
     down = {"lot_id": lot_id, "qty": "1", "reason": "เสีย"}
     too_much = client.post("/api/stock/adjust-down", json={**down, "qty": "3"}, headers=headers["employee"])
     assert too_much.status_code == 409
@@ -72,6 +72,22 @@ def test_adjustments_and_cost_visibility(client, headers, make_product):
     moves = client.get(f"/api/products/{pid}/movements", headers=headers["mechanic"]).json()
     assert [m["movement_type"] for m in moves] == ["adjust", "opening"]
     assert moves[0]["created_by_name"] == "employee"
+
+
+def test_adjust_lot_up_restores_up_to_received(client, headers, make_product):
+    pid = make_product()
+    lot_id = opening(client, headers, pid, "10", "100")
+    down = {"lot_id": lot_id, "qty": "2", "reason": "นับได้ 8"}
+    assert client.post("/api/stock/adjust-down", json=down, headers=headers["employee"]).status_code == 204
+    up = {"lot_id": lot_id, "qty": "1", "reason": "นับผิด เจออีก 1"}
+    assert client.post("/api/stock/adjust-lot-up", json=up, headers=headers["mechanic"]).status_code == 403
+    assert client.post("/api/stock/adjust-lot-up", json=up, headers=headers["employee"]).status_code == 204
+    over = client.post("/api/stock/adjust-lot-up", json={**up, "qty": "2"}, headers=headers["employee"])
+    assert over.status_code == 409
+    [p] = client.get("/api/products", headers=headers["admin"]).json()
+    assert Decimal(p["qty_on_hand"]) == 9
+    moves = client.get(f"/api/products/{pid}/movements", headers=headers["admin"]).json()
+    assert [Decimal(m["qty"]) for m in moves] == [1, -2, 10]
 
 
 def test_lot_qty_cannot_go_negative(users, make_product):

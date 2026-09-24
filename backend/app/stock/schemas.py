@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -45,15 +44,14 @@ class MovementOut(BaseModel):
     created_at: datetime
 
 
-class AdjustDownIn(In):
+class AdjustLotIn(In):
     lot_id: int
     qty: Decimal = Field(gt=0, decimal_places=3)
     reason: str = Field(min_length=1)
 
 
-class AdjustUpIn(In):
+class OpeningIn(In):
     product_id: int
     qty: Decimal = Field(gt=0, decimal_places=3)
     unit_cost: Decimal = Field(ge=0, decimal_places=4)
     reason: str = Field(min_length=1)
-    source_type: Literal["adjustment", "opening"]

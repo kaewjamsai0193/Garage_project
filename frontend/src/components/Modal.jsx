@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Icon from "./Icon";
 
-// popup จาก <dialog> เปิดทันทีที่ render (อยากปิดก็เลิก render): Esc/คลิกพื้นหลังเรียก onClose, มี onSubmit จะห่อเนื้อหาด้วย <form>
+// popup จาก <dialog> (portal ไป body กันสไตล์ของกล่องแม่ เช่น space-y ทับ margin) เปิดทันทีที่ render (อยากปิดก็เลิก render): Esc/คลิกพื้นหลังเรียก onClose, มี onSubmit จะห่อเนื้อหาด้วย <form>
 export default function Modal({ title, onClose, onSubmit, footer, children }) {
   const ref = useRef(null);
 
   useEffect(() => ref.current.showModal(), []);
 
   const Body = onSubmit ? "form" : "div";
-  return (
+  return createPortal(
     <dialog
       ref={ref}
       className="modal"
@@ -36,6 +37,7 @@ export default function Modal({ title, onClose, onSubmit, footer, children }) {
           </footer>
         )}
       </Body>
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }

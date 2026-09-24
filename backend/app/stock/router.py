@@ -6,7 +6,7 @@ from app.db import get_db, get_or_404
 from app.models import Product, StockLot, StockMovement, User
 from app.schemas import serialize_for_role
 from app.stock import service
-from app.stock.schemas import AdjustDownIn, AdjustUpIn, LotAdminOut, LotOut, MovementOut, ProductIn, ProductOut
+from app.stock.schemas import AdjustLotIn, LotAdminOut, LotOut, MovementOut, OpeningIn, ProductIn, ProductOut
 
 router = APIRouter(prefix="/api", tags=["stock"])
 
@@ -70,13 +70,20 @@ def list_product_movements(product_id: int, db=Depends(get_db), _=Depends(curren
 
 
 @router.post("/stock/adjust-down", status_code=204)
-def adjust_down(data: AdjustDownIn, db=Depends(get_db), user=Depends(staff)):
+def adjust_down(data: AdjustLotIn, db=Depends(get_db), user=Depends(staff)):
     """POST /api/stock/adjust-down: admin/พนักงาน ลดของใน Lot พร้อมเหตุผล → 204"""
-    service.adjust_down(db, data, user)
+    service.adjust_lot(db, data, user, -1)
     return Response(status_code=204)
 
 
-@router.post("/stock/adjust-up", response_model=LotAdminOut, status_code=201)
-def adjust_up(data: AdjustUpIn, db=Depends(get_db), user=Depends(admin)):
-    """POST /api/stock/adjust-up: admin เพิ่ม Lot ใหม่ (ปรับเพิ่ม/ตั้งต้น) → คืน Lot"""
-    return service.adjust_up(db, data, user)
+@router.post("/stock/adjust-lot-up", status_code=204)
+def adjust_lot_up(data: AdjustLotIn, db=Depends(get_db), user=Depends(staff)):
+    """POST /api/stock/adjust-lot-up: admin/พนักงาน เติมของคืน Lot เดิม (ไม่เกินที่รับเข้า) พร้อมเหตุผล → 204"""
+    service.adjust_lot(db, data, user, 1)
+    return Response(status_code=204)
+
+
+@router.post("/stock/opening", response_model=LotAdminOut, status_code=201)
+def add_opening(data: OpeningIn, db=Depends(get_db), user=Depends(admin)):
+    """POST /api/stock/opening: admin ลงสต็อกตั้งต้นเป็น Lot ใหม่ → คืน Lot"""
+    return service.add_opening(db, data, user)

@@ -31,8 +31,8 @@ function MoreMenu({ items }) {
   );
 }
 
-// โครงหน้ารายละเอียด: ลิงก์กลับ + หัวเรื่อง + เนื้อหา + แถบปุ่มหลัก (มือถือติดขอบล่าง จอใหญ่อยู่ท้ายเนื้อหา)
-export default function DetailLayout({ back, backLabel, title, subtitle, badge, menu = [], footer, children }) {
+// โครงหน้ารายละเอียด: ลิงก์กลับ + หัวเรื่อง (+ ปุ่ม action / เมนู ⋯) + เนื้อหา + แถบปุ่มหลัก (มือถือติดขอบล่าง จอใหญ่อยู่ท้ายเนื้อหา)
+export default function DetailLayout({ back, backLabel, title, subtitle, badge, action, menu = [], footer, children }) {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <header>
@@ -49,6 +49,7 @@ export default function DetailLayout({ back, backLabel, title, subtitle, badge, 
             {subtitle && <div className="text-sm text-muted">{subtitle}</div>}
           </div>
           {badge && <div className="pt-1">{badge}</div>}
+          {action}
           {menu.length > 0 && <MoreMenu items={menu} />}
         </div>
       </header>

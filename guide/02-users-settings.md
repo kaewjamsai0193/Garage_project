@@ -354,16 +354,17 @@ props ที่เหลือส่งต่อให้ `<input>` ทั้ง
 
 ```jsx
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Icon from "./Icon";
 
-// popup จาก <dialog> เปิดทันทีที่ render (อยากปิดก็เลิก render): Esc/คลิกพื้นหลังเรียก onClose, มี onSubmit จะห่อเนื้อหาด้วย <form>
+// popup จาก <dialog> (portal ไป body กันสไตล์ของกล่องแม่ เช่น space-y ทับ margin) เปิดทันทีที่ render (อยากปิดก็เลิก render): Esc/คลิกพื้นหลังเรียก onClose, มี onSubmit จะห่อเนื้อหาด้วย <form>
 export default function Modal({ title, onClose, onSubmit, footer, children }) {
   const ref = useRef(null);
 
   useEffect(() => ref.current.showModal(), []);
 
   const Body = onSubmit ? "form" : "div";
-  return (
+  return createPortal(
     <dialog
       ref={ref}
       className="modal"
@@ -377,27 +378,30 @@ export default function Modal({ title, onClose, onSubmit, footer, children }) {
         if (e.target === ref.current) onClose();
       }}
     >
-      <Body onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+      <Body onSubmit={onSubmit} className="flex min-h-0 flex-auto flex-col">
         <header className="flex items-center gap-2 border-b border-line py-2 pr-2 pl-4">
           <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</h2>
           <button type="button" aria-label="ปิด" className="btn btn-ghost btn-icon" onClick={onClose}>
             <Icon name="close" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">{children}</div>
+        <div className="min-h-0 flex-auto space-y-4 overflow-y-auto p-4">{children}</div>
         {footer && (
           <footer className="border-t border-line px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             {footer}
           </footer>
         )}
       </Body>
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
 ```
 
 - **render = เปิด · เลิก render = ปิด** ค่าในฟอร์มข้างในล้างเองทุกครั้ง ไม่ต้องมี state `open`
 - `<dialog>` + `showModal()` ได้ฉากหลังมืด · Esc · กับดักโฟกัส ฟรีจากเบราว์เซอร์
+- `createPortal(…, document.body)` ย้าย `<dialog>` ไปใต้ `<body>` — ไม่งั้นสไตล์ของกล่องแม่ เช่น `space-y-4` ไปทับ margin แล้วป๊อปอัพเด้งไปชิดขอบบน
+- ข้างในใช้ `flex-auto` ไม่ใช้ `flex-1` — Safari คิดความสูงกล่องจาก basis 0% แล้วได้ 0 เห็นแค่ฉากหลังมืด
 - `onCancel` (Esc) กับคลิกฉากหลังเรียก `onClose` ให้คนเรียกตัดสินใจเอง
 - มี `onSubmit` → ห่อทั้งกล่องด้วย `<form>` ปุ่มใน `footer` กด Enter ส่งได้
 

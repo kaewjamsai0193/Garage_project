@@ -5,13 +5,10 @@ from app.db import get_or_404, lock_shop
 from app.models import Product, StockLot, StockMovement
 from app.money import format_qty, round_money
 
-# Lot เก็บว่า "ของมาจากไหน" (source_type) · สมุดสต็อกเก็บว่า "เกิดอะไรขึ้น" (movement_type) คำเลยคนละชุด
-MOVEMENT_TYPE_BY_SOURCE = {"adjustment": "adjust", "opening": "opening"}
-
 
 def save_product(db, product_id, data) -> Product:
     """ล็อกร้าน → สร้าง (product_id=None) หรือแก้สินค้า: กันรหัสซ้ำ, กันเปลี่ยนหน่วยเมื่อมี Lot แล้ว → commit"""
-    lock_shop(db)  # กัน adjust_up สร้าง Lot แรกแทรกระหว่างเช็คหน่วยกับ commit
+    lock_shop(db)  # กัน add_opening สร้าง Lot แรกแทรกระหว่างเช็คหน่วยกับ commit
     product = get_or_404(db, Product, product_id, "สินค้า") if product_id else Product()
     code_owner = db.scalar(select(Product.id).where(Product.code == data.code))  # รหัสนี้เป็นของสินค้าตัวไหน
     if code_owner is not None and code_owner != product_id:
@@ -27,26 +24,33 @@ def save_product(db, product_id, data) -> Product:
     return product
 
 
-def adjust_down(db, data, user) -> None:
-    """ล็อกร้าน → หัก qty_remaining ของ Lot (ห้ามเกินคงเหลือ) + บันทึก movement ติดลบ"""
+def adjust_lot(db, data, user, sign) -> None:
+    """ล็อกร้าน → ปรับ qty_remaining ของ Lot (sign=-1 ลด ห้ามต่ำกว่า 0, sign=1 เพิ่ม ห้ามเกินที่รับเข้า) + บันทึก movement"""
     lock_shop(db)
     lot = db.scalar(select(StockLot).where(StockLot.id == data.lot_id).with_for_update())
     if lot is None:
         raise HTTPException(404, "ไม่พบ Lot")
-    if data.qty > lot.qty_remaining:
+    if sign < 0 and data.qty > lot.qty_remaining:
         raise HTTPException(409, f"ปรับลดเกินคงเหลือของ Lot (เหลือ {format_qty(lot.qty_remaining)})")
-    lot.qty_remaining -= data.qty
-    db.add(StockMovement(lot_id=lot.id, qty=-data.qty, movement_type="adjust", reason=data.reason, created_by=user.id))
+    room = lot.qty_received - lot.qty_remaining
+    if sign > 0 and data.qty > room:
+        raise HTTPException(409, f"ปรับเพิ่มเกินจำนวนรับเข้าของ Lot (เพิ่มได้อีก {format_qty(room)})")
+    lot.qty_remaining += sign * data.qty
+    db.add(
+        StockMovement(
+            lot_id=lot.id, qty=sign * data.qty, movement_type="adjust", reason=data.reason, created_by=user.id
+        )
+    )
     db.commit()
 
 
-def adjust_up(db, data, user) -> StockLot:
-    """ล็อกร้าน → สร้าง Lot ใหม่ตามจำนวน/ต้นทุน + บันทึก movement ขาเข้า"""
+def add_opening(db, data, user) -> StockLot:
+    """ล็อกร้าน → สร้าง Lot สต็อกตั้งต้นตามจำนวน/ต้นทุน + บันทึก movement ขาเข้า (ของเข้าปกติจะมาจากใบรับของ)"""
     lock_shop(db)
     get_or_404(db, Product, data.product_id, "สินค้า")
     lot = StockLot(
         product_id=data.product_id,
-        source_type=data.source_type,
+        source_type="opening",
         unit_cost=data.unit_cost,
         qty_received=data.qty,
         qty_remaining=data.qty,
@@ -61,7 +65,7 @@ def adjust_up(db, data, user) -> StockLot:
             qty=data.qty,
             reason=data.reason,
             created_by=user.id,
-            movement_type=MOVEMENT_TYPE_BY_SOURCE[data.source_type],
+            movement_type="opening",
         )
     )
     db.commit()
