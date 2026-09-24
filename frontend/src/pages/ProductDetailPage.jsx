@@ -11,8 +11,7 @@ import ReasonDialog from "../components/ReasonDialog";
 import ProductModal from "../components/ProductModal";
 import StatusBadge, { productStatus } from "../components/StatusBadge";
 
-const SOURCE_LABEL = { adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
-// adjust ค่าบวก = ปรับเพิ่มแบบเก่า (ก่อนเหลือแค่ปุ่มของเสีย) ยังมีในฐาน
+const SOURCE_LABEL = { opening: "สต็อกตั้งต้น" };
 const MOVE_LABEL = { adjust: "ของเสีย/สูญหาย", opening: "ตั้งต้น" };
 const TABS = [
   ["lots", "Lot"],
@@ -162,7 +161,7 @@ function MovementList({ moves }) {
           <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
             <div className="min-w-0 text-sm">
               <div className="font-semibold">
-                {m.movement_type === "adjust" && qty > 0 ? "ปรับเพิ่ม" : MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
+                {MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
               </div>
               <div className="text-muted">
                 {formatDate(m.created_at)} · {m.created_by_name}

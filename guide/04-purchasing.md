@@ -1025,7 +1025,7 @@ import { api, docNo, formatMoney, formatQty, formatDate, formatUnitPrice } from 
 ```
 
 ```jsx
-const SOURCE_LABEL = { receipt: "รับของ", adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
+const SOURCE_LABEL = { receipt: "รับของ", opening: "สต็อกตั้งต้น" };
 const MOVE_LABEL = { receive: "รับของ", adjust: "ของเสีย/สูญหาย", opening: "ตั้งต้น" };
 ```
 

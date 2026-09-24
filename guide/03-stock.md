@@ -986,8 +986,7 @@ import ReasonDialog from "../components/ReasonDialog";
 import ProductModal from "../components/ProductModal";
 import StatusBadge, { productStatus } from "../components/StatusBadge";
 
-const SOURCE_LABEL = { adjustment: "ปรับเพิ่ม", opening: "สต็อกตั้งต้น" };
-// adjust ค่าบวก = ปรับเพิ่มแบบเก่า (ก่อนเหลือแค่ปุ่มของเสีย) ยังมีในฐาน
+const SOURCE_LABEL = { opening: "สต็อกตั้งต้น" };
 const MOVE_LABEL = { adjust: "ของเสีย/สูญหาย", opening: "ตั้งต้น" };
 const TABS = [
   ["lots", "Lot"],
@@ -1137,7 +1136,7 @@ function MovementList({ moves }) {
           <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
             <div className="min-w-0 text-sm">
               <div className="font-semibold">
-                {m.movement_type === "adjust" && qty > 0 ? "ปรับเพิ่ม" : MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
+                {MOVE_LABEL[m.movement_type]} · Lot #{m.lot_id}
               </div>
               <div className="text-muted">
                 {formatDate(m.created_at)} · {m.created_by_name}
@@ -1236,7 +1235,6 @@ function OpeningDialog({ productId, onClose }) {
 - ยิง 3 กุญแจ ทุกตัวขึ้นต้น `"products"` → invalidate ครั้งเดียวโหลดใหม่หมด
 - `dialog` = ป๊อปอัพที่เปิดอยู่ `{ type: "edit" | "opening" | "waste" }` · เปิดได้ทีละอัน · ปิด = `setDialog(null)`
 - ปุ่ม "ของเสีย/สูญหาย" อยู่ด้านล่างคู่กับแก้สินค้า · `stockedLots` (Lot ที่ยังมีของ) เป็นตัวเลือกใน dropdown ค่าเริ่ม Lot เก่าสุด · ไม่มีของเลย → ปุ่มจาง
-- สมุด: `adjust` ค่าลบ = "ของเสีย/สูญหาย" · ค่าบวกเป็นข้อมูลปรับเพิ่มแบบเก่าที่ยังค้างในฐาน แสดง "ปรับเพิ่ม"
 - ป๊อปอัพปรับสต็อกใช้ **state** ไม่ใช้ route (เป็นคำสั่งย่อยในหน้า ไม่ต้องมี URL) ต่างจากฟอร์มเพิ่ม/แก้
 - `useAdjustStock` ตัวเดียวใช้ทั้งของเสียและตั้งต้น · Lot ที่หมดแล้วสีจาง · ตัวเลขติดลบในสมุดสีแดง
 
